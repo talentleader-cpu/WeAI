@@ -2329,9 +2329,54 @@ function renderAIHub(){
           <p style="font-size:13px;line-height:1.55;margin:8px 0 0">Sync diario con RecruitCRM (todas las noches, 8 AM CDMX), generación de embeddings de IA para búsqueda y matching (cada 30 minutos), reentrenamiento del modelo de scoring (una vez al mes, con los resultados recientes de contrataciones y rechazos), y recordatorios por correo (por hora, hoy pausados). El estatus de cada una está arriba — ${userRole==='admin'?'usa el botón para pausarla o activarla':'pídele a un admin que la pause o la active'}.</p>
         </div>
       </div>
+      <div style="border-top:1px solid var(--line);margin:26px 0 0;padding-top:22px">
+        <h3 style="color:var(--navy);margin:0 0 4px">Salud del WeAI Assistant</h3>
+        <p class="muted" style="margin:0 0 14px;font-size:13px">Qué tan seguido el 👍/👎 que da el equipo dice que una respuesta sí sirvió, en los últimos 30 días.</p>
+        <div id="assistantHealth">Cargando…</div>
+      </div>
     </div>`;
   renderAutomationsList();
+  renderAssistantHealth();
 }
+async function renderAssistantHealth(){
+  const box=document.getElementById('assistantHealth'); if(!box) return;
+  const {data,error}=await sb.rpc('weai_assistant_health',{p_days:30});
+  if(error||!data||!data[0]){ box.innerHTML='<p class="muted" style="font-size:13px">No se pudo cargar la salud del asistente.</p>'; return; }
+  const h=data[0];
+  const statCard=(label,val,color)=>`<div style="flex:1;min-width:120px;border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#fff">
+      <div class="muted" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.03em">${label}</div>
+      <div style="font-size:22px;font-weight:700;color:${color||'var(--navy)'};margin-top:2px">${val}</div>
+    </div>`;
+  let html = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+      ${statCard('Respuestas calificadas', fmtNum(h.total_feedback))}
+      ${statCard('👍 Sí sirvió', fmtNum(h.positive), '#1d8348')}
+      ${statCard('👎 No sirvió', fmtNum(h.negative), '#c0392b')}
+      ${statCard('% positivo', h.positive_rate==null?'—':(h.positive_rate+'%'), '#1d8348')}
+    </div>`;
+  if(h.total_feedback===0){
+    html += `<p class="muted" style="font-size:12.5px">Todavía no hay feedback registrado en esta ventana de 30 días. Si el equipo ya está calificando respuestas con 👍/👎 en el chat, aquí va a empezar a aparecer.</p>`;
+  }
+  box.innerHTML = html;
+  if(userRole==='admin'||userRole==='lead'){
+    const negBox=document.createElement('div');
+    negBox.style.cssText='margin-top:16px';
+    negBox.innerHTML='<h4 style="color:var(--navy);margin:0 0 8px;font-size:13.5px">Últimas respuestas que no sirvieron (👎)</h4><div id="assistantNeg" class="muted" style="font-size:12.5px">Cargando…</div>';
+    box.appendChild(negBox);
+    const {data:neg,error:negErr}=await sb.rpc('weai_assistant_recent_negative',{p_limit:10});
+    const negList=document.getElementById('assistantNeg');
+    if(negErr||!neg){ negList.innerHTML='No se pudo cargar el detalle.'; return; }
+    if(neg.length===0){ negList.innerHTML='Ninguna en los registros guardados hasta ahora.'; return; }
+    negList.className='';
+    negList.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px">
+      ${neg.map(n=>`<div style="border:1px solid #f2c9c4;background:#fff7f6;border-radius:10px;padding:10px 14px">
+          <div style="font-weight:600;font-size:13px;color:var(--navy)">${esc(n.question)}</div>
+          <div class="muted" style="font-size:12px;margin-top:4px">${esc((n.reply_html||'').replace(/<[^>]+>/g,' ').slice(0,220))}${(n.reply_html||'').length>220?'…':''}</div>
+          <div class="muted" style="font-size:11px;margin-top:4px">${new Date(n.created_at).toLocaleString('es-MX')}</div>
+        </div>`).join('')}
+      </div>`;
+  }
+}
+function fmtNum(n){ return n==null?'—':Number(n).toLocaleString('en-US'); }
 async function renderAutomationsList(){
   const box=document.getElementById('autoList'); if(!box) return;
   const {data,error}=await sb.rpc('weai_list_automations');
