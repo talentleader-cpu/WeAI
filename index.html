@@ -1020,11 +1020,14 @@ function recruitGo(key){
 }
 function currentMonthKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function goJobsMonth(){
-  // Antes filtraba por defecto a "creadas este mes", lo cual escondia posiciones
-  // viejas cuyo STATUS se acababa de actualizar (se veian como si "nada hubiera
-  // cambiado"). Ahora el tablero de Jobs abre mostrando TODAS las posiciones;
-  // el filtro por mes sigue disponible en el selector "By month" si se necesita.
-  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'all',pval:''};
+  // El tablero de Jobs abre filtrado al MES ACTUAL. Antes eso escondia
+  // posiciones viejas cuyo STATUS se acababa de actualizar (agrupaba por
+  // fecha de creacion). Ahora periodKeyOf() agrupa las posiciones NO-Activas
+  // por el mes en que cambiaron de estatus, asi que: una posicion que se
+  // pauso/cancelo/cerro ESTE mes si aparece aqui, y una que cambio de status
+  // hace meses (y no se ha vuelto a tocar) se va sola a su mes real -- sin
+  // amontonar todo el historial en la vista por defecto.
+  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'month',pval:currentMonthKey()};
   document.getElementById('pageTitle').textContent='Jobs'; renderJobs();
 }
 
