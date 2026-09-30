@@ -7404,7 +7404,7 @@ function openEditJob(){
   const contracts=[['','—'],['full_time','Full time'],['part_time','Part time'],['contractor','Contractor'],['temporary','Temporary'],['internship','Internship']];
   const mods=[['','—'],['Remote','Remote'],['Hybrid','Hybrid'],['On-site','On-site']];
   const sols=['360 Management','Recruitment','PEO','Soft Landing'];
-  const stats=[['open','Open'],['on_hold','On hold'],['closed','Closed']];
+  const stats=JOB_STATUSES.map(s=>[s.k,s.t]);
   const opt=(v,cur,lbl)=>`<option value="${esc(v)}" ${(cur||'')===v?'selected':''}>${esc(lbl!=null?lbl:v)}</option>`;
   showModal('Edit position', `
     <label>Position title</label><input id="eTitle" value="${esc(p.title||'')}">
