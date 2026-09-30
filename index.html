@@ -1020,7 +1020,11 @@ function recruitGo(key){
 }
 function currentMonthKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function goJobsMonth(){
-  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'month',pval:currentMonthKey()};
+  // Antes filtraba por defecto a "creadas este mes", lo cual escondia posiciones
+  // viejas cuyo STATUS se acababa de actualizar (se veian como si "nada hubiera
+  // cambiado"). Ahora el tablero de Jobs abre mostrando TODAS las posiciones;
+  // el filtro por mes sigue disponible en el selector "By month" si se necesita.
+  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'all',pval:''};
   document.getElementById('pageTitle').textContent='Jobs'; renderJobs();
 }
 
