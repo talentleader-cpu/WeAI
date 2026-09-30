@@ -5069,7 +5069,7 @@ async function renderJobs(){
     <div class="content"><div id="jobsList" class="muted">Loading…</div><div id="jobsBulk"></div></div>`;
   paintSeg();
   const {data,error}=await sb.from('positions')
-    .select('id,title,openings,contract,location,status,wexpand_solution,public_slug,created_at, owner_id, clients(name,website), owner:profiles!owner_id(full_name)')
+    .select('id,title,openings,contract,location,status,wexpand_solution,public_slug,created_at,updated_at, owner_id, clients(name,website), owner:profiles!owner_id(full_name)')
     .order('created_at',{ascending:false}).limit(2000);
   if(error){ document.getElementById('jobsList').textContent='Error: '+error.message; return; }
   jobsData=data||[];
@@ -5093,8 +5093,13 @@ function paintSeg(){
 
 // ---- filters ----
 function periodKeyOf(p,mode){
-  if(!p.created_at) return null;
-  const d=new Date(p.created_at), y=d.getFullYear();
+  // Una posicion ya no-Activa (pausada/cancelada/contratada/fantasma) se agrupa
+  // por el mes en que cambio de estatus (updated_at), no por el mes en que se
+  // creo -- asi el filtro "By month" refleja cuando salio del mes actual en
+  // vez de amontonar posiciones viejas bajo su mes de creacion original.
+  const dateStr = (p.status && p.status!=='open' && p.updated_at) ? p.updated_at : p.created_at;
+  if(!dateStr) return null;
+  const d=new Date(dateStr), y=d.getFullYear();
   if(mode==='year') return String(y);
   if(mode==='quarter') return y+'-Q'+(Math.floor(d.getMonth()/3)+1);
   if(mode==='month') return y+'-'+String(d.getMonth()+1).padStart(2,'0');
