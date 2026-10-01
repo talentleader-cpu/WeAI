@@ -5084,7 +5084,7 @@ async function renderJobs(){
   // bug que reporto Maricela: el filtro se quedaba pegado en el mes anterior).
   if(jobsFilters.pmode==='month' && jobsFilters.pval!==currentMonthKey()){
     const keys=[...new Set(jobsData.map(p=>periodKeyOf(p,'month')).filter(Boolean))].sort().reverse();
-    if(keys.length && (!jobsFilters.pval || !jobsData.some(p=>periodKeyOf(p,'month')===jobsFilters.pval))){
+    if(keys.length && (!jobsFilters.pval || !jobsData.some(p=>periodMatches(p,'month',jobsFilters.pval)))){
       jobsFilters.pval=keys[0];
     }
   }
@@ -5112,6 +5112,20 @@ function periodKeyOf(p,mode){
   if(mode==='quarter') return y+'-Q'+(Math.floor(d.getMonth()/3)+1);
   if(mode==='month') return y+'-'+String(d.getMonth()+1).padStart(2,'0');
   return null;
+}
+function periodMatches(p,mode,val){
+  // Una posicion Activa sigue viva hasta que cambia de estatus: debe aparecer
+  // en CADA periodo desde que se creo hasta hoy, no solo en el periodo exacto
+  // de su creacion -- si no, un puesto abierto en septiembre desaparece del
+  // filtro "By month" en cuanto empieza octubre aunque siga activo (reportado
+  // por Maricela: el tablero de Jobs mostraba "0 of 331" en Oct 2026 porque
+  // ninguna posicion se HABIA CREADO ese mes, aunque 6+ seguian abiertas).
+  // Las claves YYYY / YYYY-QN / YYYY-MM comparan bien como string.
+  if(!val) return true;
+  const key=periodKeyOf(p,mode);
+  if(!key) return false;
+  if((p.status||'open')==='open') return key<=val;
+  return key===val;
 }
 function periodLabel(key,mode){
   if(mode==='year') return key;
@@ -5187,7 +5201,7 @@ function filteredJobs(){
       if(f.recruiter==='__none'){ if(rn) return false; }
       else if(rn!==f.recruiter) return false;
     }
-    if(f.pmode!=='all' && f.pval){ if(periodKeyOf(p,f.pmode)!==f.pval) return false; }
+    if(f.pmode!=='all' && f.pval){ if(!periodMatches(p,f.pmode,f.pval)) return false; }
     if(q){
       const hay=[p.title,p.clients&&p.clients.name,p.location,p.wexpand_solution,p.owner&&p.owner.full_name]
         .filter(Boolean).join(' ').toLowerCase();
