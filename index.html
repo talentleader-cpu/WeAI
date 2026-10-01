@@ -970,8 +970,8 @@ const RECRUIT_SECTIONS=[
     for:['Boolean-style search: all-of (AND), any-of (OR) and exclude (NOT) keywords.','Structured filters: skills, minimum experience, English level, location, source.','Built for recruiters to source fast — and for leaders to pull complete, exportable reports.']},
   {k:'hotlists', t:'Hot Lists', c:'orange', d:'Curated shortlists of your best candidates by position and industry.', live:'hotlists',
     for:['Build reusable hot lists per role family (e.g. Project Controls) and per industry.','Drop in top candidates straight from Talent Search in one click.','Have a ready shortlist the moment a role opens — or to share with a client.']},
-  {k:'jobs', t:'Jobs', c:'navy', d:'All your positions — Kanban by status, with an optional filter by month.', live:'jobs-month',
-    for:['Opens showing every position, grouped by status (Active, On Hold, Canceled, Hired, Ghost).','List + Kanban, drag between Open, On Hold, Canceled, Hired, Ghost.','Filter by client, recruiter, status and period for clean metrics.']},
+  {k:'jobs', t:'Jobs', c:'navy', d:'Your active positions — clear the status filter to see every stage.', live:'jobs-month',
+    for:['Opens showing only Active positions, no clutter from other stages.','List + Kanban, drag between Open, On Hold, Canceled, Hired, Ghost.','Filter by client, recruiter, status and period for clean metrics.']},
   {k:'jobdesc', t:'Job Descriptions', c:'blue', d:'Turn a client’s raw job description into the Wexpand format (ES + EN) with AI.', live:'jobdesc',
     for:['Paste or upload the client’s JD (PDF / Word).','Add schedule, work days, modality, location and notes.','AI rewrites it into your Wexpand template in Spanish and English — edit and save to the position.']},
   {k:'candidates', t:'Candidates', c:'teal', d:'Your whole talent database — browse every candidate in table or card view.', live:'candidates',
@@ -1025,10 +1025,11 @@ function goJobsMonth(){
   // mes actual -- varias posiciones Activas reales no se abrieron ESTE mes,
   // asi que el filtro por mes actual las escondia por completo cada vez que
   // entraba a la pantalla (mostraba "0 Activa" aunque hubiera posiciones
-  // activas reales). Ahora Jobs abre en "All time" por default: se ve todo,
-  // agrupado por status. El filtro "By month" sigue disponible a mano para
-  // quien lo quiera usar.
-  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'all',pval:''};
+  // activas reales). Ahora Jobs abre en "All time" (sin filtro de periodo).
+  // Ademas, por default solo se muestra la columna "Activa" -- Maricela no
+  // quiere ver las demas etapas (Pausada/Cancelada/Contratada/Fantasma) al
+  // entrar. Puede quitar el filtro de status a mano si quiere ver todo.
+  jobsFilters={q:'',status:'open',client:'',recruiter:'',pmode:'all',pval:''};
   document.getElementById('pageTitle').textContent='Jobs'; renderJobs();
 }
 
@@ -5242,7 +5243,11 @@ function renderJobsList(list){
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return MONTHS[d.getMonth()]+' '+d.getFullYear(); }
 function fmtDateFull(s){ if(!s) return '—'; const d=new Date(s); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); }
 function renderJobsKanban(list){
-  const cols=JOB_STATUSES.map(s=>{
+  // Si hay un filtro de status activo (p.ej. "Activa"), solo se dibuja esa
+  // columna -- Maricela pidio explicitamente no ver las demas etapas
+  // (Pausada/Cancelada/Contratada/Fantasma) cuando solo quiere ver Activas.
+  const statusesToShow = jobsFilters.status ? JOB_STATUSES.filter(s=>s.k===jobsFilters.status) : JOB_STATUSES;
+  const cols=statusesToShow.map(s=>{
     const items=list.filter(p=>(p.status||'open')===s.k);
     const cards=items.map(jobCard).join('') || '<div class="kempty">Drop positions here</div>';
     return `<div class="kcol" data-k="${s.k}"
