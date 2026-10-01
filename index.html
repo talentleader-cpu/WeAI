@@ -5076,8 +5076,13 @@ async function renderJobs(){
     .order('created_at',{ascending:false}).limit(2000);
   if(error){ document.getElementById('jobsList').textContent='Error: '+error.message; return; }
   jobsData=data||[];
-  // si el mes seleccionado no tiene posiciones, cae al mes más reciente con datos
-  if(jobsFilters.pmode==='month'){
+  // Si el mes seleccionado no tiene posiciones, cae al mes mas reciente con datos --
+  // PERO nunca cuando el mes seleccionado es el mes real de hoy (currentMonthKey()):
+  // goJobsMonth() lo pone ahi a proposito cada vez que se abre Jobs desde el hub, y debe
+  // quedarse en el mes actual aunque todavia no haya ninguna posicion creada/movida este
+  // mes (en vez de saltar de regreso al mes viejo mas reciente con datos, que es justo el
+  // bug que reporto Maricela: el filtro se quedaba pegado en el mes anterior).
+  if(jobsFilters.pmode==='month' && jobsFilters.pval!==currentMonthKey()){
     const keys=[...new Set(jobsData.map(p=>periodKeyOf(p,'month')).filter(Boolean))].sort().reverse();
     if(keys.length && (!jobsFilters.pval || !jobsData.some(p=>periodKeyOf(p,'month')===jobsFilters.pval))){
       jobsFilters.pval=keys[0];
