@@ -5514,7 +5514,7 @@ async function scoreLoad(r){
   const box=document.getElementById('dScore'); if(!box) return;
   try{
     const {data,error}=await sb.from('candidate_position_features')
-      .select('position_id,expert_score,model_score,model_version,has_cv,has_wtim,has_evaluation_matrix,eval_total_score,has_deep_interview,has_assessment,assessment_score,days_in_pipeline,num_prior_rejections, positions(title)')
+      .select('position_id,expert_score,model_score,model_version,has_cv,has_wtim,has_evaluation_matrix,eval_total_score,has_deep_interview,has_assessment,assessment_score,days_in_pipeline,num_prior_rejections,recruiter_feedback, positions(title)')
       .eq('candidate_id', r.id).order('computed_at',{ascending:false});
     if(error) throw error;
     const list=data||[];
@@ -5539,6 +5539,22 @@ async function scoreLoad(r){
       const pipeBits=[];
       if(s.days_in_pipeline!=null) pipeBits.push(Math.round(s.days_in_pipeline)+'d in pipeline');
       if(s.num_prior_rejections) pipeBits.push(s.num_prior_rejections+' prior rejection(s) in other positions');
+      // Botones de feedback manual del reclutador sobre este match especifico
+      // (candidate_id + position_id). Guarda en candidate_position_features.recruiter_feedback
+      // -- NO sustituye el label real de entrenamiento (hired/rejected en el CRM), es una
+      // señal extra para ir viendo que tan bien calibrado esta el modelo/umbral con el tiempo.
+      const fb=s.recruiter_feedback;
+      const fbBtn=(val,emoji,label)=>{
+        const active=fb===val;
+        const activeBg = val==='good' ? '#eef7f1' : '#fbeceb';
+        const activeBd = val==='good' ? '#1c7a57' : '#b23b22';
+        return `<button type="button" onclick="pwSetMatchFeedback('${r.id}','${s.position_id}','${val}',this)" title="${label}" style="border:1px solid ${active?activeBd:'var(--bd)'};background:${active?activeBg:'#fff'};border-radius:8px;padding:3px 9px;font-size:13px;cursor:pointer;line-height:1.3">${emoji}</button>`;
+      };
+      const feedbackHtml=`<div class="mfeedback" style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">
+        <span style="font-size:10.5px;color:var(--muted)">Good match?</span>
+        ${fbBtn('good','👍','Mark as a good match')}
+        ${fbBtn('bad','👎','Mark as a bad match')}
+      </div>`;
       return `<div style="border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
           <b style="font-size:12.5px">${esc((s.positions&&s.positions.title)||'—')}</b>
@@ -5546,9 +5562,31 @@ async function scoreLoad(r){
         </div>
         <div style="font-size:10.5px;color:var(--muted);margin-bottom:6px">${esc(kind)}${pipeBits.length?' · '+esc(pipeBits.join(' · ')):''}</div>
         <div>${factorHtml}</div>
+        ${feedbackHtml}
       </div>`;
     }).join('');
   }catch(e){ box.innerHTML='<p class="muted" style="font-size:12.5px">—</p>'; }
+}
+// Guarda el pulgar arriba/abajo del reclutador sobre un match especifico (candidato+posicion).
+// Actualiza el boton en el momento (sin esperar un refetch) para que se sienta instantaneo.
+async function pwSetMatchFeedback(candidateId, positionId, value, btn){
+  const wrap=btn.closest('.mfeedback'); if(wrap) wrap.querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{
+    const {error}=await sb.from('candidate_position_features')
+      .update({ recruiter_feedback:value, recruiter_feedback_by:currentUser&&currentUser.id, recruiter_feedback_at:new Date().toISOString() })
+      .eq('candidate_id',candidateId).eq('position_id',positionId);
+    if(error) throw error;
+    if(wrap){
+      wrap.querySelectorAll('button').forEach(b=>{
+        const isThis=b===btn;
+        const isGood=b.title.indexOf('good')>-1;
+        b.style.background = isThis ? (isGood?'#eef7f1':'#fbeceb') : '#fff';
+        b.style.borderColor = isThis ? (isGood?'#1c7a57':'#b23b22') : 'var(--bd)';
+      });
+    }
+    toast(value==='good' ? 'Marked as a good match' : 'Marked as a bad match');
+  }catch(e){ toast('Could not save feedback: '+(e.message||e)); }
+  finally{ if(wrap) wrap.querySelectorAll('button').forEach(b=>b.disabled=false); }
 }
 function backFromPosition(){ if(pwFrom==='clients'){ renderClients(); } else { renderJobs(); } }
 function pwRender(){
