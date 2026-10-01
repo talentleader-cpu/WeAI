@@ -970,8 +970,8 @@ const RECRUIT_SECTIONS=[
     for:['Boolean-style search: all-of (AND), any-of (OR) and exclude (NOT) keywords.','Structured filters: skills, minimum experience, English level, location, source.','Built for recruiters to source fast — and for leaders to pull complete, exportable reports.']},
   {k:'hotlists', t:'Hot Lists', c:'orange', d:'Curated shortlists of your best candidates by position and industry.', live:'hotlists',
     for:['Build reusable hot lists per role family (e.g. Project Controls) and per industry.','Drop in top candidates straight from Talent Search in one click.','Have a ready shortlist the moment a role opens — or to share with a client.']},
-  {k:'jobs', t:'Jobs', c:'navy', d:'Active positions this month — updates automatically as new ones come in.', live:'jobs-month',
-    for:['Opens filtered to the current month; it rolls forward on its own.','List + Kanban, drag between Open, On Hold, Canceled, Hired, Ghost.','Filter by client, recruiter, status and period for clean metrics.']},
+  {k:'jobs', t:'Jobs', c:'navy', d:'All your positions — Kanban by status, with an optional filter by month.', live:'jobs-month',
+    for:['Opens showing every position, grouped by status (Active, On Hold, Canceled, Hired, Ghost).','List + Kanban, drag between Open, On Hold, Canceled, Hired, Ghost.','Filter by client, recruiter, status and period for clean metrics.']},
   {k:'jobdesc', t:'Job Descriptions', c:'blue', d:'Turn a client’s raw job description into the Wexpand format (ES + EN) with AI.', live:'jobdesc',
     for:['Paste or upload the client’s JD (PDF / Word).','Add schedule, work days, modality, location and notes.','AI rewrites it into your Wexpand template in Spanish and English — edit and save to the position.']},
   {k:'candidates', t:'Candidates', c:'teal', d:'Your whole talent database — browse every candidate in table or card view.', live:'candidates',
@@ -1021,14 +1021,14 @@ function recruitGo(key){
 }
 function currentMonthKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
 function goJobsMonth(){
-  // El tablero de Jobs abre filtrado al MES ACTUAL. Antes eso escondia
-  // posiciones viejas cuyo STATUS se acababa de actualizar (agrupaba por
-  // fecha de creacion). Ahora periodKeyOf() agrupa las posiciones NO-Activas
-  // por el mes en que cambiaron de estatus, asi que: una posicion que se
-  // pauso/cancelo/cerro ESTE mes si aparece aqui, y una que cambio de status
-  // hace meses (y no se ha vuelto a tocar) se va sola a su mes real -- sin
-  // amontonar todo el historial en la vista por defecto.
-  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'month',pval:currentMonthKey()};
+  // 2026-10-01: Maricela pidio explicitamente dejar de abrir Jobs filtrado al
+  // mes actual -- varias posiciones Activas reales no se abrieron ESTE mes,
+  // asi que el filtro por mes actual las escondia por completo cada vez que
+  // entraba a la pantalla (mostraba "0 Activa" aunque hubiera posiciones
+  // activas reales). Ahora Jobs abre en "All time" por default: se ve todo,
+  // agrupado por status. El filtro "By month" sigue disponible a mano para
+  // quien lo quiera usar.
+  jobsFilters={q:'',status:'',client:'',recruiter:'',pmode:'all',pval:''};
   document.getElementById('pageTitle').textContent='Jobs'; renderJobs();
 }
 
