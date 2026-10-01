@@ -5444,7 +5444,7 @@ async function openJob(id, from){
 }
 async function pwLoadApps(){
   const {data}=await sb.from('applications')
-    .select('id,current_stage,stage,stage_remark,created_at,owner_id,client_visible, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url)')
+    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,client_visible, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url)')
     .eq('position_id',pwPos.id).order('created_at',{ascending:true});
   pwApps=data||[];
   pwVideoEmails=new Set();
