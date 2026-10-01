@@ -5149,6 +5149,12 @@ function buildFilterBar(){
 }
 function periodValueOptions(mode,selected){
   const keys=uniqSorted(jobsData.map(p=>periodKeyOf(p,mode)));
+  // El mes/periodo actual siempre aparece en la lista, aunque todavia no tenga
+  // ninguna posicion -- si no, el <select> no encuentra la opcion seleccionada
+  // (currentMonthKey() via goJobsMonth()) y el navegador la muestra como "All months",
+  // aunque el filtro por debajo si este aplicando correctamente el mes real (0 resultados).
+  if(mode==='month' && !keys.includes(currentMonthKey())) keys.unshift(currentMonthKey());
+  keys.sort().reverse();
   return `<option value="">All ${mode}s</option>`+keys.map(k=>`<option value="${k}"${k===selected?' selected':''}>${periodLabel(k,mode)}</option>`).join('');
 }
 function onPeriodModeChange(mode){
