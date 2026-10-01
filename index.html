@@ -1547,7 +1547,7 @@ async function xnPosChanged(){
   const bpKind = xnType==='wtim' ? 'wtim' : 'technical';
   const label = xnType==='wtim' ? 'WTIM™' : 'technical assessment';
   if(!posId){ box.innerHTML=`<p class="muted" style="font-size:11.5px;margin:0">Choose a position to check whether it already has an approved ${label}.</p>`; btn.disabled=true; return; }
-  box.innerHTML='<p class="muted" style="font-size:11.5px;margin:0">Verificando…</p>'; btn.disabled=true;
+  box.innerHTML='<p class="muted" style="font-size:11.5px;margin:0">Checking…</p>'; btn.disabled=true;
   try{
     const cacheKey=bpKind+':'+posId;
     let bp = xnBpCache[cacheKey];
@@ -1592,7 +1592,7 @@ async function sendInviteEmail({posId, toEmail, toName, subject, html}){
       subject, html
     }});
     if(error) throw error;
-    if(!data||!data.ok) throw new Error((data&&data.error)||'No se pudo enviar el correo.');
+    if(!data||!data.ok) throw new Error((data&&data.error)||'Could not send the email.');
     return {ok:true};
   }catch(e){ return {ok:false, error:(e.message||e)}; }
 }
@@ -1605,13 +1605,13 @@ function inviteEmailHtml({greetName, intro, positionTitle, clientName, link, ext
       </div>
     </div>
     <div style="border:1px solid #e4ecf2;border-top:none;border-radius:0 0 12px 12px;padding:22px">
-      <p style="margin:0 0 12px;color:#0f2233;font-size:14.5px">Hola${greetName?(' '+esc(greetName)):''},</p>
-      <p style="margin:0 0 14px;color:#33414d;font-size:14px;line-height:1.6">${intro}${positionTitle?` para la posición <b>${esc(positionTitle)}</b>${clientName?(' en <b>'+esc(clientName)+'</b>'):''}`:''}.</p>
+      <p style="margin:0 0 12px;color:#0f2233;font-size:14.5px">Hi${greetName?(' '+esc(greetName)):''},</p>
+      <p style="margin:0 0 14px;color:#33414d;font-size:14px;line-height:1.6">${intro}${positionTitle?` for the <b>${esc(positionTitle)}</b> position${clientName?(' at <b>'+esc(clientName)+'</b>'):''}`:''}.</p>
       ${extraNote?`<p style="margin:0 0 14px;color:#5a6b78;font-size:12.5px">${extraNote}</p>`:''}
       <div style="text-align:center;margin:22px 0">
-        <a href="${esc(link)}" style="background:#0653A1;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px;display:inline-block">Comenzar →</a>
+        <a href="${esc(link)}" style="background:#0653A1;color:#fff;text-decoration:none;font-weight:700;font-size:14px;padding:12px 26px;border-radius:10px;display:inline-block">Start →</a>
       </div>
-      <p style="margin:0;color:#8a97a3;font-size:11.5px">Si el botón no funciona, copia y pega este link en tu navegador:<br>${esc(link)}</p>
+      <p style="margin:0;color:#8a97a3;font-size:11.5px">If the button doesn't work, copy and paste this link into your browser:<br>${esc(link)}</p>
     </div>
     <p style="text-align:center;color:#8a97a3;font-size:11px;margin:14px 0 0">© Wexpand · Talent without borders</p>
   </div>`;
@@ -1645,10 +1645,10 @@ async function xhNewSubmit(btn){
       if(url){
         const mailRes = await sendInviteEmail({
           posId, toEmail:email, toName:name,
-          subject: isWtim ? `Tu evaluación WTIM™ · ${posTitle||'Wexpand'}` : `Tu assessment técnico · ${posTitle||'Wexpand'}`,
+          subject: isWtim ? `Your WTIM™ assessment · ${posTitle||'Wexpand'}` : `Your technical assessment · ${posTitle||'Wexpand'}`,
           html: inviteEmailHtml({
             greetName:name,
-            intro: isWtim ? 'Te invitamos a completar tu evaluación WTIM™ (Wexpand Talent Intelligence Method)' : 'Te invitamos a completar tu assessment técnico',
+            intro: isWtim ? 'We invite you to complete your WTIM™ assessment (Wexpand Talent Intelligence Method)' : 'We invite you to complete your technical assessment',
             positionTitle:posTitle, clientName:'',
             link:url
           })
@@ -1682,10 +1682,10 @@ async function xhNewSubmit(btn){
         subject:`Your technical assessment · ${posTitle||'Wexpand'}`,
         html: inviteEmailHtml({
           greetName:name,
-          intro:'Te invitamos a completar tu assessment técnico de Excel'+(data.bank_area?` (personalizado para ${data.bank_area})`:''),
+          intro:'We invite you to complete your Excel technical assessment'+(data.bank_area?` (customized for ${data.bank_area})`:''),
           positionTitle:posTitle, clientName:'',
           link:url,
-          extraNote:`Tiempo estimado: ${minutes} min · Pass mark: ${passPct}%`
+          extraNote:`Estimated time: ${minutes} min · Pass mark: ${passPct}%`
         })
       });
       toast(mailRes.ok ? 'Invitation sent by email and link copied' : ('Link copied, but the email failed: '+mailRes.error));
@@ -2321,26 +2321,26 @@ function renderAIHub(){
         <p class="muted" style="margin:0 0 14px;font-size:13px">What already runs on its own inside WeAI, and when. ${userRole==='admin'?'You can turn a scheduled automation on or off here.':'Ask an admin if one of these needs to be turned on or off.'}</p>
         <div id="autoList">Loading…</div>
         <div style="margin-top:22px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff">
-          <img src="training/img/12_automations.jpg" alt="Diagrama: qué pasa automáticamente cuando un candidato aplica" style="display:block;width:100%">
+          <img src="training/img/12_automations.jpg" alt="Diagram: what happens automatically when a candidate applies" style="display:block;width:100%">
         </div>
         <div class="an-intel" style="margin-top:14px;background:linear-gradient(135deg,#f6faff,#eef5ff)">
-          <h3 style="font-size:14px">Cuando llega un candidato, en orden</h3>
+          <h3 style="font-size:14px">When a candidate arrives, in order</h3>
           <p style="font-size:13px;line-height:1.55;margin:8px 0 0">
-            <b>1) Registro y parseo:</b> WeAI crea el registro del candidato y parsea el CV con IA (experiencia, skills, contacto).
-            <b>2) Score y matching:</b> calcula qué tan bien encaja contra la posición, y lo compara contra todas las demás posiciones abiertas.
-            <b>3) Avance automático:</b> si el score es muy alto, puede mover al candidato a la siguiente etapa sin que nadie lo dispare a mano.
-            <b>4) Notificación:</b> le manda un correo cada vez que cambia de etapa.
-            <b>5) Calificación:</b> si graba una entrevista de video o un assessment técnico, WeAI los califica automáticamente.
+            <b>1) Record and parse:</b> WeAI creates the candidate record and parses the resume with AI (experience, skills, contact info).
+            <b>2) Score and matching:</b> calculates how well they fit the position, and compares them against every other open position.
+            <b>3) Automatic advance:</b> if the score is very high, it can move the candidate to the next stage without anyone triggering it manually.
+            <b>4) Notification:</b> sends an email every time their stage changes.
+            <b>5) Grading:</b> if they record a video interview or a technical assessment, WeAI grades them automatically.
           </p>
         </div>
         <div class="an-intel" style="margin-top:12px;background:linear-gradient(135deg,#fff9f0,#fff4e5)">
-          <h3 style="font-size:14px">Automatizaciones con horario</h3>
-          <p style="font-size:13px;line-height:1.55;margin:8px 0 0">Sync diario con RecruitCRM (todas las noches, 8 AM CDMX), generación de embeddings de IA para búsqueda y matching (cada 30 minutos), reentrenamiento del modelo de scoring (una vez al mes, con los resultados recientes de contrataciones y rechazos), y recordatorios por correo (por hora, hoy pausados). El estatus de cada una está arriba — ${userRole==='admin'?'usa el botón para pausarla o activarla':'pídele a un admin que la pause o la active'}.</p>
+          <h3 style="font-size:14px">Scheduled automations</h3>
+          <p style="font-size:13px;line-height:1.55;margin:8px 0 0">Daily sync with RecruitCRM (every night, 8 AM CDMX), AI embedding generation for search and matching (every 30 minutes), scoring model retraining (once a month, using recent hire/reject results), and email reminders (hourly, currently paused). Each one's status is above — ${userRole==='admin'?'use the button to pause or activate it':'ask an admin to pause or activate it'}.</p>
         </div>
       </div>
       <div style="border-top:1px solid var(--line);margin:26px 0 0;padding-top:22px">
         <h3 style="color:var(--navy);margin:0 0 4px">Salud del WeAI Assistant</h3>
-        <p class="muted" style="margin:0 0 14px;font-size:13px">Qué tan seguido el 👍/👎 que da el equipo dice que una respuesta sí sirvió, en los últimos 30 días.</p>
+        <p class="muted" style="margin:0 0 14px;font-size:13px">How often the team's 👍/👎 says an answer actually helped, over the last 30 days.</p>
         <div id="assistantHealth">Cargando…</div>
       </div>
     </div>`;
@@ -2363,13 +2363,13 @@ async function renderAssistantHealth(){
       ${statCard('% positivo', h.positive_rate==null?'—':(h.positive_rate+'%'), '#1d8348')}
     </div>`;
   if(h.total_feedback===0){
-    html += `<p class="muted" style="font-size:12.5px">Todavía no hay feedback registrado en esta ventana de 30 días. Si el equipo ya está calificando respuestas con 👍/👎 en el chat, aquí va a empezar a aparecer.</p>`;
+    html += `<p class="muted" style="font-size:12.5px">No feedback recorded yet in this 30-day window. If the team is already rating answers with 👍/👎 in the chat, it will start showing up here.</p>`;
   }
   box.innerHTML = html;
   if(userRole==='admin'||userRole==='lead'){
     const negBox=document.createElement('div');
     negBox.style.cssText='margin-top:16px';
-    negBox.innerHTML='<h4 style="color:var(--navy);margin:0 0 8px;font-size:13.5px">Últimas respuestas que no sirvieron (👎)</h4><div id="assistantNeg" class="muted" style="font-size:12.5px">Cargando…</div>';
+    negBox.innerHTML='<h4 style="color:var(--navy);margin:0 0 8px;font-size:13.5px">Recent answers that didn\'t help (👎)</h4><div id="assistantNeg" class="muted" style="font-size:12.5px">Loading…</div>';
     box.appendChild(negBox);
     const {data:neg,error:negErr}=await sb.rpc('weai_assistant_recent_negative',{p_limit:10});
     const negList=document.getElementById('assistantNeg');
@@ -2392,7 +2392,7 @@ async function renderAutomationsList(){
   if(error||!data){ box.innerHTML='<p class="muted" style="font-size:13px">No se pudieron cargar las automatizaciones.</p>'; return; }
   const cronJobs=data.filter(d=>d.source==='cron');
   const events=data.filter(d=>d.source==='event');
-  const freq=s=>({'0 14 * * *':'Diario, 8:00 AM (CDMX)','0 6 1 * *':'Mensual, día 1, 12:00 AM','0 * * * *':'Cada hora','*/30 * * * *':'Cada 30 minutos'}[s]||s);
+  const freq=s=>({'0 14 * * *':'Daily, 8:00 AM (CDMX)','0 6 1 * *':'Monthly, day 1, 12:00 AM','0 * * * *':'Every hour','*/30 * * * *':'Every 30 minutes'}[s]||s);
   box.innerHTML = `
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
       ${cronJobs.map(j=>`
@@ -2416,7 +2416,7 @@ async function renderAutomationsList(){
     </div>`;
 }
 async function toggleAutomation(jobid,newActive){
-  if(!confirm(newActive?'¿Activar esta automatización?':'¿Pausar esta automatización?')) return;
+  if(!confirm(newActive?'Activate this automation?':'Pause this automation?')) return;
   const {error}=await sb.rpc('weai_set_automation_active',{p_jobid:jobid,p_active:newActive});
   if(error){ alert('Error: '+error.message); return; }
   renderAutomationsList();
@@ -2849,19 +2849,19 @@ function openRecruitSection(key){
 
 // ===== TRAINING (Day-1 walkthrough, narrated video per module) =====
 const TRAINING_MODULES=[
-  {key:'00_home',title:'Welcome to WeAI',dur:'0:38',desc:'La pantalla de inicio se llama <b>The Recruiting Playbook</b>. Desde ahí llegas a los 9 módulos operativos de reclutamiento, y en el menú de la izquierda tienes Clients y AI. Con tu usuario de reclutador no vas a ver Analytics, Support ni Settings — son solo para admins y leads.'},
-  {key:'01_talent_search',title:'Talent Search',dur:'0:25',desc:'Búsqueda booleana sobre toda la base de candidatos: combina palabras que deben aparecer todas (AND), que basta con que aparezca una (OR), y palabras a excluir (NOT). Filtra por skills, años de experiencia, inglés, ubicación, fuente y fecha.'},
-  {key:'02_hot_lists',title:'Hot Lists',dur:'0:23',desc:'Shortlists ya armadas por industria. Puedes crear una manualmente o dejar que el sistema la arme automáticamente por industria.'},
-  {key:'03_jobs_kanban',title:'Jobs',dur:'0:26',desc:'Tablero Kanban de todas las posiciones: Open, On Hold, Canceled, Hired. Filtra por status, cliente, reclutador o mes; crea una posición nueva o importa desde Hireflix.'},
-  {key:'04_position_detail',title:'Detalle de una posición',dur:'0:33',desc:'Cada posición tiene 5 pestañas: Overview, Candidates (tu pipeline), Intake, Intelligence (IA propone requisitos y knockouts), y Assessment (examen técnico WTIM™).'},
-  {key:'05_job_descriptions',title:'Job Descriptions',dur:'0:21',desc:'Convierte la descripción cruda del cliente en el formato oficial de Wexpand, en español e inglés, con IA. Se guarda en la librería para verla o descargarla luego.'},
-  {key:'06_candidates',title:'Candidates',dur:'0:22',desc:'La base completa de candidatos en tabla o tarjetas. Úsalo para explorar en general; usa Talent Search cuando necesites filtros avanzados.'},
-  {key:'07_gross_net',title:'Gross ↔ Net Calculator',dur:'0:26',desc:'Convierte un sueldo mensual entre bruto y neto con las tablas fiscales de México 2026. Finanzas siempre confirma el número exacto antes de firmar.'},
-  {key:'08_technical_assessments',title:'Technical Assessments',dur:'0:24',desc:'Los exámenes técnicos WTIM™ se envían por posición y se califican automáticamente. Reenvía invitaciones, descarga reportes o envía un examen nuevo desde aquí.'},
-  {key:'09_deep_interviews',title:'Deep Interviews',dur:'0:23',desc:'Todas las entrevistas de video, organizadas por posición. Si ves "no candidate matched", solo significa que el sistema aún no vinculó esa grabación con un perfil.'},
-  {key:'10_clients',title:'Clients',dur:'0:15',desc:'Todas las empresas para las que reclutamos, con posiciones totales, abiertas y contactos guardados.'},
-  {key:'11_weai_assistant',title:'WeAI Assistant',dur:'0:30',desc:'El chat flotante disponible en cualquier pantalla. Responde con datos reales, nunca inventados. Califica cada respuesta con 👍 o 👎 — ese feedback es lo que nos dice qué mejorar.'},
-  {key:'12_automations',title:'Automatizaciones: qué pasa solo',dur:'1:15',desc:'Cuando un candidato aplica: WeAI parsea el CV, calcula su score de encaje, puede avanzarlo de etapa si el score es muy alto, y avisa por correo en cada cambio. Un admin ve el estatus de cada automatización con horario (y puede pausarla) en <b>AI → Automations</b>.'}
+  {key:'00_home',title:'Welcome to WeAI',dur:'0:38',desc:'The home screen is called <b>The Recruiting Playbook</b>. From there you reach the 9 operational recruiting modules, and the left menu has Clients and AI. With your recruiter login you won\'t see Analytics, Support or Settings — those are for admins and leads only.'},
+  {key:'01_talent_search',title:'Talent Search',dur:'0:25',desc:'Boolean search across the entire candidate database: combine words that must all appear (AND), words where any one is enough (OR), and words to exclude (NOT). Filter by skills, years of experience, English, location, source and date.'},
+  {key:'02_hot_lists',title:'Hot Lists',dur:'0:23',desc:'Shortlists already built by industry. You can create one manually or let the system build it automatically by industry.'},
+  {key:'03_jobs_kanban',title:'Jobs',dur:'0:26',desc:'Kanban board of every position: Open, On Hold, Canceled, Hired. Filter by status, client, recruiter or month; create a new position or import from Hireflix.'},
+  {key:'04_position_detail',title:'Position detail',dur:'0:33',desc:'Each position has 5 tabs: Overview, Candidates (your pipeline), Intake, Intelligence (AI proposes requirements and knockouts), and Assessment (WTIM™ technical exam).'},
+  {key:'05_job_descriptions',title:'Job Descriptions',dur:'0:21',desc:'Converts the client\'s raw description into Wexpand\'s official format, in Spanish and English, with AI. It\'s saved in the library so you can view or download it later.'},
+  {key:'06_candidates',title:'Candidates',dur:'0:22',desc:'The full candidate database in table or card view. Use this to browse broadly; use Talent Search when you need advanced filters.'},
+  {key:'07_gross_net',title:'Gross ↔ Net Calculator',dur:'0:26',desc:'Converts a monthly salary between gross and net using Mexico\'s 2026 tax tables. Finance always confirms the exact figure before signing.'},
+  {key:'08_technical_assessments',title:'Technical Assessments',dur:'0:24',desc:'WTIM™ technical exams are sent per position and graded automatically. Resend invitations, download reports, or send a new exam from here.'},
+  {key:'09_deep_interviews',title:'Deep Interviews',dur:'0:23',desc:'All video interviews, organized by position. If you see "no candidate matched", it just means the system hasn\'t linked that recording to a profile yet.'},
+  {key:'10_clients',title:'Clients',dur:'0:15',desc:'Every company we recruit for, with total positions, open positions, and saved contacts.'},
+  {key:'11_weai_assistant',title:'WeAI Assistant',dur:'0:30',desc:'The floating chat available on any screen. It answers with real data, never made up. Rate each answer with 👍 or 👎 — that feedback is what tells us what to improve.'},
+  {key:'12_automations',title:'Automations: what runs on its own',dur:'1:15',desc:'When a candidate applies: WeAI parses the resume, calculates their fit score, can advance them a stage if the score is very high, and notifies by email on every change. An admin sees the status of each scheduled automation (and can pause it) in <b>AI → Automations</b>.'}
 ];
 const TRAINING_SUBS={
   '00_home': 'data:text/vtt;charset=utf-8;base64,V0VCVlRUCgowMDowMDowMC42MDAgLS0+IDAwOjAwOjAzLjg4NgpXZWxjb21lIHRvIFdlQUksIFdleHBhbmQncyByZWNydWl0aW5nIHBsYXRmb3JtLgoKMDA6MDA6MDMuODg2IC0tPiAwMDowMDowNy44NzEKVGhpcyBpcyB5b3VyIGhvbWUgc2NyZWVuLCBjYWxsZWQgdGhlIFJlY3J1aXRpbmcgUGxheWJvb2suCgowMDowMDowNy44NzEgLS0+IDAwOjAwOjEzLjE4NApGcm9tIGhlcmUgeW91IGNhbiByZWFjaCBldmVyeSB0b29sIHlvdSBuZWVkOiBUYWxlbnQgU2VhcmNoLCBIb3QgTGlzdHMsIEpvYnMsCgowMDowMDoxMy4xODQgLS0+IDAwOjAwOjE4Ljg0NwpKb2IgRGVzY3JpcHRpb25zLCBDYW5kaWRhdGVzLCB0aGUgR3Jvc3MgdG8gTmV0IENhbGN1bGF0b3IsIFRlY2huaWNhbCBBc3Nlc3NtZW50cywKCjAwOjAwOjE4Ljg0NyAtLT4gMDA6MDA6MjEuNDM0CkRlZXAgSW50ZXJ2aWV3cywgYW5kIEludGFrZSBNZWV0aW5ncy4KCjAwOjAwOjIxLjQzNCAtLT4gMDA6MDA6MjQuNzkwCk9uIHRoZSBsZWZ0IHNpZGUsIHlvdSBhbHNvIGhhdmUgQ2xpZW50cyBhbmQgQSBJLgoKMDA6MDA6MjQuNzkwIC0tPiAwMDowMDoyOC43MDUKQW5hbHl0aWNzLCBTdXBwb3J0LCBhbmQgU2V0dGluZ3MgYWxzbyBsaXZlIGluIHRoYXQgbWVudSwKCjAwOjAwOjI4LjcwNSAtLT4gMDA6MDA6MzEuMTUyCmJ1dCB0aG9zZSBhcmUgZm9yIGFkbWlucyBhbmQgbGVhZHMsCgowMDowMDozMS4xNTIgLS0+IDAwOjAwOjM0LjY0NwpzbyB5b3UgbWF5IG5vdCBzZWUgdGhlbSB3aXRoIHlvdXIgcmVjcnVpdGVyIGxvZ2luLgoKMDA6MDA6MzQuNjQ3IC0tPiAwMDowMDozNy4xNjQKTGV0J3Mgd2FsayB0aHJvdWdoIHdoYXQgeW91IGRvIGhhdmUuCg==',
@@ -2880,12 +2880,12 @@ const TRAINING_SUBS={
 };
 
 const TRAINING_TASKS=[
-  {id:'c0',t:'Ver los 13 videos del recorrido',s:'De arriba a abajo, en orden — toma unos 6 minutos en total.'},
-  {id:'c1',t:'Correr una búsqueda real en Talent Search',s:'Usa un puesto que tengas abierto hoy.'},
-  {id:'c2',t:'Abrir una posición y revisar sus 5 pestañas',s:'Overview, Candidates, Intake, Intelligence, Assessment.'},
-  {id:'c3',t:'Hacerle 2 preguntas al WeAI Assistant',s:'Una de candidatos y una de sueldo — y calificar la respuesta con 👍 o 👎.'},
-  {id:'c4',t:'Leer cómo funcionan las automatizaciones',s:'Módulo 12 — para saber por qué un candidato ya tiene score o correo antes de que tú hagas nada.'},
-  {id:'c5',t:'Preguntar cualquier duda a tu lead antes de tu primer caso real',s:'Mejor preguntar hoy que adivinar mañana.'}
+  {id:'c0',t:'Watch all 13 walkthrough videos',s:'Top to bottom, in order — takes about 6 minutes total.'},
+  {id:'c1',t:'Run a real search in Talent Search',s:'Use a role you have open today.'},
+  {id:'c2',t:'Open a position and review its 5 tabs',s:'Overview, Candidates, Intake, Intelligence, Assessment.'},
+  {id:'c3',t:'Ask the WeAI Assistant 2 questions',s:'One about candidates and one about salary — and rate the answer with 👍 or 👎.'},
+  {id:'c4',t:'Read how the automations work',s:'Module 12 — so you know why a candidate already has a score or an email before you do anything.'},
+  {id:'c5',t:'Ask your lead anything before your first real case',s:'Better to ask today than guess tomorrow.'}
 ];
 function trainingCSS(){
   if(document.getElementById('trainingCSS')) return;
@@ -2942,7 +2942,7 @@ function renderTraining(){
       <p class="tr-desc">${m.desc}</p>
       <div class="tr-vid">
         <video controls preload="metadata" poster="training/img/${m.key}.jpg"><source src="training/media/${m.key}.mp4" type="video/mp4"><track kind="subtitles" src="${TRAINING_SUBS[m.key]}" srclang="en" label="English" default></video>
-        <div class="tr-vidmeta"><span>Recorrido narrado (inglés)</span><span>${m.dur}</span></div>
+        <div class="tr-vidmeta"><span>Narrated walkthrough (English)</span><span>${m.dur}</span></div>
       </div>
       ${warn}
     </div>`;
@@ -2951,12 +2951,12 @@ function renderTraining(){
     <button class="pw-back" onclick="recruitHome()">← Back to Recruiting</button>
     <div class="content" style="max-width:820px">
       <div class="tr-hero">
-        <h2 style="color:var(--navy);margin:6px 0 2px">Domina WeAI en tu primer día</h2>
-        <p>El recorrido completo de la plataforma: qué hace cada módulo, cómo se usa, y un video narrado (en inglés) de cada pantalla. Míralo una vez de principio a fin, y vuelve a él como referencia cuando lo necesites.</p>
+        <h2 style="color:var(--navy);margin:6px 0 2px">Master WeAI on day one</h2>
+        <p>The complete platform walkthrough: what each module does, how to use it, and a narrated video (in English) of every screen. Watch it once start to finish, and come back to it as a reference whenever you need it.</p>
       </div>
       <div class="tr-checklist">
         <span class="tr-pct" id="trPct">0%</span>
-        <h3>Checklist de día 1</h3>
+        <h3>Day 1 checklist</h3>
         <ul id="trChecklist">${tasks}</ul>
       </div>
       ${mods}
@@ -3040,7 +3040,7 @@ function renderTalentSearch(){
             <select id="tsEng">${ENG_OPTS.map(o=>`<option value="${o[0]}" ${tsFilters.eng===o[0]?'selected':''}>${o[1]}</option>`).join('')}</select></div>
           <div class="ts-f"><label>State / Location</label>
             <select id="tsState"><option value="">All locations</option>
-              <optgroup label="México (32 states)">${MX_STATES.map(s=>`<option value="${esc(s)}" ${tsFilters.loc===s?'selected':''}>${esc(s)}</option>`).join('')}</optgroup>
+              <optgroup label="Mexico (32 states)">${MX_STATES.map(s=>`<option value="${esc(s)}" ${tsFilters.loc===s?'selected':''}>${esc(s)}</option>`).join('')}</optgroup>
               <optgroup label="International"><option value="__intl" ${tsFilters.loc==='__intl'?'selected':''}>Outside Mexico</option></optgroup>
             </select></div>
           <div class="ts-f"><label>Source (applied via)</label>
@@ -4014,10 +4014,10 @@ async function assessInvite(kind,i){
       const posTitle = (res.app.positions&&res.app.positions.title)||'';
       const mailRes = await sendInviteEmail({
         posId: res.app.position_id, toEmail:r.email, toName:r.full_name||'',
-        subject: kind==='wtim' ? `Tu evaluación WTIM™ · ${posTitle||'Wexpand'}` : `Tu assessment técnico · ${posTitle||'Wexpand'}`,
+        subject: kind==='wtim' ? `Your WTIM™ assessment · ${posTitle||'Wexpand'}` : `Your technical assessment · ${posTitle||'Wexpand'}`,
         html: inviteEmailHtml({
           greetName:r.full_name||'',
-          intro: kind==='wtim' ? 'Te invitamos a completar tu evaluación WTIM™ (Wexpand Talent Intelligence Method)' : 'Te invitamos a completar tu assessment técnico',
+          intro: kind==='wtim' ? 'We invite you to complete your WTIM™ assessment (Wexpand Talent Intelligence Method)' : 'We invite you to complete your technical assessment',
           positionTitle:posTitle, clientName:'',
           link:url
         })
@@ -4758,7 +4758,7 @@ function setAskFooter(){
     <div class="askrow" style="display:flex;gap:6px;align-items:center">
       <input type="file" id="askFileInput" accept="image/*,.pdf,.docx,.txt" style="display:none" multiple onchange="askPickFiles(this)">
       <button type="button" id="askAttachBtn" title="Adjuntar JD o captura" style="border:none;background:none;cursor:pointer;font-size:18px;padding:4px 2px">📎</button>
-      <input id="askInput" placeholder="Pregúntame lo que sea…" style="flex:1">
+      <input id="askInput" placeholder="Ask me anything…" style="flex:1">
       <button id="askSend">Send</button>
     </div>`;
   document.getElementById('askAttachBtn').onclick=()=>document.getElementById('askFileInput').click();
@@ -4789,7 +4789,7 @@ async function askPickFiles(inp){
 }
 async function assistantHome(){
   _assistantPendingFiles=[];
-  document.getElementById('aBody').innerHTML='<div class="bub">Cargando tu conversación…</div>';
+  document.getElementById('aBody').innerHTML='<div class="bub">Loading your conversation…</div>';
   setAskFooter();
   try{
     const {data:convId,error:cErr}=await sb.rpc('assistant_get_or_create_conversation',{p_conversation_id:null});
@@ -4812,13 +4812,13 @@ async function assistantHome(){
   }
 }
 function showAssistantWelcome(){
-  appendBub(`Hola, soy WeAI — tu consultor de reclutamiento. Puedo consultar tus candidatos, posiciones, sueldos de mercado y costos, y también darte consejo experto de reclutamiento en general. Puedes adjuntarme una job description o una captura (📎) y platicamos sobre eso.`,false);
+  appendBub(`Hi, I'm WeAI — your recruiting consultant. I can look up your candidates, positions, market salaries and costs, and also give you expert recruiting advice in general. You can attach a job description or a screenshot (📎) and we'll talk about it.`,false);
   const chips=document.createElement('div'); chips.className='chips2';
   chips.innerHTML=`<button class="chip2" onclick="ask('How many candidates in Guadalajara')">In Guadalajara</button>
     <button class="chip2" onclick="ask('English level breakdown')">English levels</button>
     <button class="chip2" onclick="ask('Candidates by state')">By state</button>
-    <button class="chip2" onclick="ask('Cuanto pagan por un Project Manager')">Sueldo Project Manager</button>
-    <button class="chip2" onclick="ask('Como estructuro una entrevista por competencias?')">Consejo de entrevista</button>
+    <button class="chip2" onclick="ask('How much does a Project Manager get paid')">Project Manager salary</button>
+    <button class="chip2" onclick="ask('How do I structure a competency-based interview?')">Interview advice</button>
     <button class="chip2" onclick="ticketForm('bug')">Report a problem</button>`;
   document.getElementById('aBody').appendChild(chips);
 }
@@ -4835,10 +4835,10 @@ function attachFeedback(bubEl, question, answerHtml){
   if(!bubEl) return;
   const row=document.createElement('div');
   row.style.cssText='margin-top:8px;padding-top:6px;border-top:1px solid rgba(150,150,150,.18);font-size:12px;opacity:.8;display:flex;gap:10px;align-items:center';
-  row.innerHTML=`<span style="opacity:.75">¿Te sirvió esta respuesta?</span>
-    <button type="button" class="fb-btn" data-r="1" title="Si, me sirvio" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0">👍</button>
-    <button type="button" class="fb-btn" data-r="-1" title="No me sirvio" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0">👎</button>
-    <span class="fb-thanks" style="display:none;color:var(--muted,#8a97a6)">¡Gracias por tu feedback!</span>`;
+  row.innerHTML=`<span style="opacity:.75">Was this answer helpful?</span>
+    <button type="button" class="fb-btn" data-r="1" title="Yes, it helped" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0">👍</button>
+    <button type="button" class="fb-btn" data-r="-1" title="No, it didn't help" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0">👎</button>
+    <span class="fb-thanks" style="display:none;color:var(--muted,#8a97a6)">Thanks for your feedback!</span>`;
   bubEl.appendChild(row);
   row.querySelectorAll('.fb-btn').forEach(btn=>{
     btn.onclick=async()=>{
@@ -4915,39 +4915,39 @@ async function answerQuestion(qraw){
   if(topM){
     const n=Math.min(Math.max(parseInt(topM[1]||'10',10)||10,1),25);
     const posQuery=(topM[2]||'').replace(/[?.]+$/,'').trim();
-    if(!posQuery) return `Dime el nombre de la posición, ej: <i>"top 10 candidates for Bookkeeper"</i>.`;
+    if(!posQuery) return `Tell me the position name, e.g.: <i>"top 10 candidates for Bookkeeper"</i>.`;
     const {data:positions,error:perr}=await sb.rpc('assistant_find_position',{p_query:posQuery});
     if(perr) throw perr;
-    if(!positions||!positions.length) return `No encontré ninguna posición abierta que coincida con "${esc(posQuery)}".`;
+    if(!positions||!positions.length) return `I couldn't find any open position matching "${esc(posQuery)}".`;
     const pos=positions[0];
     const {data:cands,error:cerr}=await sb.rpc('assistant_top_candidates_for_position',{p_position_id:pos.id,p_limit:n});
     if(cerr) throw cerr;
-    if(!cands||!cands.length) return `"${esc(pos.title)}" todavía no tiene candidatos con embedding calculado para armar un ranking. Puede ser que la posición o los candidatos aún no estén procesados en el motor semántico.`;
+    if(!cands||!cands.length) return `"${esc(pos.title)}" doesn't have candidates with a computed embedding yet to build a ranking. The position or its candidates may not have been processed by the semantic engine yet.`;
     const rows=cands.map((c,i)=>{
       const tags=[];
-      if(c.location_match) tags.push('📍 misma ciudad');
-      if(c.english_ok===true) tags.push('✅ inglés B2+');
-      else if(c.english_ok===false) tags.push('⚠️ inglés <B2');
-      if(c.salary_ok===true) tags.push('💰 dentro de presupuesto');
-      else if(c.salary_ok===false) tags.push('⚠️ sobre presupuesto');
+      if(c.location_match) tags.push('📍 same city');
+      if(c.english_ok===true) tags.push('✅ English B2+');
+      else if(c.english_ok===false) tags.push('⚠️ English <B2');
+      if(c.salary_ok===true) tags.push('💰 within budget');
+      else if(c.salary_ok===false) tags.push('⚠️ over budget');
       const tagStr=tags.length?(' · '+tags.join(' · ')):'';
       return `${i+1}. <b>${esc(c.full_name||'—')}</b> — ${Math.round(c.similarity*100)}% match${tagStr} · ${esc(c.location||'—')} · ${esc(c.english_level||'—')}`;
     }).join('<br>');
-    const budgetNote=cands[0]&&cands[0].budget_mxn!=null?`Presupuesto de la posición: $${Number(cands[0].budget_mxn).toLocaleString('en-US')} MXN/mes (quote aprobada por el cliente).<br>`:'';
-    return `Top ${cands.length} candidatos para <b>${esc(pos.title)}</b>${pos.client_name?(' ('+esc(pos.client_name)+')'):''}:<br>${rows}<br>${budgetNote}<span style="font-size:11.5px;color:var(--muted)">Orden: primero quienes cumplen inglés mínimo B2 y presupuesto (cuando hay datos para verificarlo), dentro de eso misma ciudad, y dentro de eso mayor similitud. Candidatos con inglés/expectativa salarial no registrados no se descartan, solo no se pueden validar.</span>`;
+    const budgetNote=cands[0]&&cands[0].budget_mxn!=null?`Position budget: $${Number(cands[0].budget_mxn).toLocaleString('en-US')} MXN/month (quote approved by the client).<br>`:'';
+    return `Top ${cands.length} candidates for <b>${esc(pos.title)}</b>${pos.client_name?(' ('+esc(pos.client_name)+')'):''}:<br>${rows}<br>${budgetNote}<span style="font-size:11.5px;color:var(--muted)">Order: first those who meet minimum B2 English and budget (when there's data to verify it), then same city, then highest similarity. Candidates with unregistered English/salary expectations aren't excluded, they just can't be validated.</span>`;
   }
   // compensation / salary benchmarking (public data, Indeed Mexico — see comp_benchmarks)
   if(q.includes('cuanto pagan')||q.includes('cuánto pagan')||q.includes('cuanto se paga')||q.includes('cuánto se paga')||q.includes('cuanto gana')||q.includes('cuánto gana')||q.includes('salario')||q.includes('sueldo')||q.includes('compensation')||q.includes('salary for')||q.includes('salary of')||(q.includes('pay')&&(q.includes('much')||q.includes('rate')))){
     const {data:bm,error:berr}=await sb.rpc('lookup_comp_benchmark',{p_query:qraw});
     if(berr) throw berr;
-    if(!bm||!bm.length) return `Todavía no tengo un benchmark de compensación para eso. Por ahora cubro: Software Engineer, Desarrollador de Software, Desarrollador Senior, Contador, Analista de Nómina, Analista de Cuentas por Pagar, Ejecutivo de Ventas, Ejecutivo Comercial, Gerente de Ventas, Project Manager, Reclutador, Servicio al Cliente, HR Generalist/Manager, Business/Financial Analyst, Operations Coordinator, Marketing Coordinator, Analista/Auditor de Calidad y Diseñador Gráfico (datos públicos de Indeed México). Dime qué otro rol necesitas y lo agregamos.`;
+    if(!bm||!bm.length) return `I don't have a compensation benchmark for that yet. Right now I cover: Software Engineer, Software Developer, Senior Developer, Accountant, Payroll Analyst, Accounts Payable Analyst, Sales Executive, Commercial Executive, Sales Manager, Project Manager, Recruiter, Customer Service, HR Generalist/Manager, Business/Financial Analyst, Operations Coordinator, Marketing Coordinator, Quality Analyst/Auditor and Graphic Designer (public Indeed Mexico data). Tell me what other role you need and we'll add it.`;
     const b=bm[0];
     const fmtN=n=>n==null?'—':'$'+Number(n).toLocaleString('en-US');
-    const rangeLine=(b.salary_min!=null||b.salary_max!=null)?`Rango: ${fmtN(b.salary_min)} – ${fmtN(b.salary_max)} ${esc(b.currency)}/mes · promedio ${fmtN(b.salary_avg)}<br>`:`Promedio: ${fmtN(b.salary_avg)} ${esc(b.currency)}/mes<br>`;
-    return `<b>${esc(b.role_family)}</b> en México ${b.city?('('+esc(b.city)+')'):'(promedio nacional)'}:<br>`+
+    const rangeLine=(b.salary_min!=null||b.salary_max!=null)?`Range: ${fmtN(b.salary_min)} – ${fmtN(b.salary_max)} ${esc(b.currency)}/month · average ${fmtN(b.salary_avg)}<br>`:`Average: ${fmtN(b.salary_avg)} ${esc(b.currency)}/month<br>`;
+    return `<b>${esc(b.role_family)}</b> in Mexico ${b.city?('('+esc(b.city)+')'):'(national average)'}:<br>`+
       rangeLine+
       (b.notes?`<span style="font-size:11.5px;color:var(--muted)">${esc(b.notes)}</span><br>`:'')+
-      `<span style="font-size:11.5px;color:var(--muted)">Fuente: ${esc(b.source)} (${esc(b.as_of_date)}) — dato publico de mercado, no un precio fijo.</span>`;
+      `<span style="font-size:11.5px;color:var(--muted)">Source: ${esc(b.source)} (${esc(b.as_of_date)}) — public market data, not a fixed price.</span>`;
   }
   // total
   if(q.includes('how many')||q.includes('total')||q.includes('count')||q.includes('candidates')){ const n=await cnt(x=>x); return `You have <b>${fmt(n)}</b> candidates in total.`; }
@@ -5949,8 +5949,36 @@ function abCompRow(kind,c){
     <div class="ic ${fam[0]}">${fam[1]}</div>
     <div class="info"><div class="nm">${fam[2]}</div><div class="ds">${esc(c.why_measured||fam[3])}</div></div>
     <div class="cfg"><label>Questions</label><input class="n" type="number" min="1" max="30" value="${c.item_count||(c.family==='cognitive'?9:c.family==='personality'?25:c.family==='technical'?8:5)}"
-      onchange="abSetCount('${kind}','${c.id}',this.value)"></div>
+      oninput="abQueueSetCount('${kind}','${c.id}',this.value)"></div>
   </div>`;
+}
+// 2026-10-01: el stepper de "Questions" se trababa -- cada click en las flechitas
+// +/- del input disparaba abSetCount() de inmediato, que guardaba en el server Y
+// reconstruia TODO el tab (abLoad(), full innerHTML). Eso destruia el <input> a
+// medio click (el usuario perdia el foco/el elemento bajo el mouse) y se sentia
+// "trabado" sobre todo si dabas varios clicks seguidos. Ahora: el valor se
+// actualiza localmente al instante (nunca se siente trabado), el guardado real
+// se hace con debounce (solo una vez que dejas de hacer click), y YA NO se
+// reconstruye todo el DOM en cada cambio -- solo se actualizan los totales.
+let abSaveTimers={};
+function abQueueSetCount(kind,id,val){
+  const abComps=abState[kind].comps;
+  const c=abComps.find(x=>x.id===id);
+  const n=Math.max(1,Math.min(30,parseInt(val)||1));
+  if(c) c.item_count=n;
+  abUpdateTotals(kind);
+  clearTimeout(abSaveTimers[id]);
+  abSaveTimers[id]=setTimeout(()=>abSetCount(kind,id,n), 700);
+}
+function abUpdateTotals(kind){
+  const bp=abState[kind].bp, comps=abState[kind].comps; if(!bp) return;
+  const total=comps.reduce((n,x)=>n+(x.item_count||0),0);
+  const blocks=document.querySelectorAll('#abWrap .ab-block');
+  const block=blocks[kind==='wtim'?0:1]; if(!block) return;
+  const ver=block.querySelector('.ab-top .muted');
+  if(ver) ver.textContent=`Version ${bp.version} · ~${bp.est_minutes||20} min · ${total} questions`;
+  const sumBs=block.querySelectorAll('.ab-sum b');
+  if(sumBs[1]) sumBs[1].textContent=total;
 }
 function abPaintHtml(kind){
   const abBp=abState[kind].bp, abComps=abState[kind].comps;
@@ -5998,7 +6026,8 @@ async function abSetCount(kind,id,val){
     const est=comps.reduce((n,x)=>n+(x.est_minutes||0),0)||20;
     const {data,error}=await sb.rpc('save_assessment_blueprint',{p_position_id:pwPos.id,p_profile_id:profileId,p_components:comps,p_est_minutes:est,p_kind:kind});
     if(error) throw error;
-    toast('Adjusted — remember to Publish to activate the changes'); abLoad();
+    abBp.est_minutes=est;
+    toast('Saved — remember to Publish to activate the changes');
   }catch(e){ toast('Error: '+(e.message||e)); }
 }
 async function abApprove(kind,btn){
