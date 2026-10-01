@@ -223,6 +223,8 @@
   .kpill.num{background:#e7f6ee;color:#1a7f57;}
   .kpill.rec{background:#f1ecfb;color:#6a4bbd;}
   .kpill.mod{background:#e6f7fb;color:#0089a8;}
+  .kpill.open-date{background:#f0f2f5;color:#566475;}
+  .kpill.open-date.carried{background:#fdeec4;color:#8c570a;}
   .kcard-top{display:flex;gap:9px;align-items:center;margin-bottom:7px;}
   .kcard-main{min-width:0;flex:1;}
   .kclient{font-size:11px;color:var(--muted);font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -5247,12 +5249,13 @@ function renderJobsList(list){
       <td>${esc(p.owner&&p.owner.full_name)||'<span class=muted>—</span>'}</td>
       <td>${p.openings||1}</td>
       <td>${esc(p.location)||'<span class=muted>—</span>'}</td>
-      <td class="muted">${fmtDate(p.created_at)}</td>
+      <td class="muted">${fmtDateFull(p.created_at)}</td>
       <td>${statusPillJob(p.status)}</td>
     </tr>`;}).join('');
   return `<table><thead>${head}</thead><tbody>${rows}</tbody></table>`;
 }
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return MONTHS[d.getMonth()]+' '+d.getFullYear(); }
+function fmtDateFull(s){ if(!s) return '—'; const d=new Date(s); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); }
 function renderJobsKanban(list){
   const cols=JOB_STATUSES.map(s=>{
     const items=list.filter(p=>(p.status||'open')===s.k);
@@ -5293,6 +5296,17 @@ function jobCard(p){
   if(p.location) meta.push(`<span class="kpill loc">${esc(p.location)}</span>`);
   meta.push(`<span class="kpill num">${p.openings||1} opening${(p.openings||1)>1?'s':''}</span>`);
   if(rec) meta.push(`<span class="kpill rec">${rec}</span>`);
+  // Fecha de apertura (created_at) siempre visible -- pedido por Maricela para
+  // distinguir, de un vistazo, las posiciones realmente nuevas de este mes de
+  // las que siguen activas desde meses anteriores y aparecen "cargadas" al mes
+  // en curso gracias al fix de periodMatches(). Si el filtro "By month" esta
+  // activo y la posicion NO se abrio en el mes seleccionado, el pill se pinta
+  // en ambar para marcarla como "de un mes anterior".
+  if(p.created_at){
+    const carried = jobsFilters.pmode==='month' && jobsFilters.pval && (p.status||'open')==='open'
+      && periodKeyOf(p,'month')!==jobsFilters.pval;
+    meta.push(`<span class="kpill open-date${carried?' carried':''}" title="Fecha de apertura">${carried?'📌 ':''}Abierta: ${fmtDateFull(p.created_at)}</span>`);
+  }
   return `<div class="kcard" draggable="true" data-id="${p.id}"
       ondragstart="onDragJob(event,'${p.id}')" ondragend="onDragEnd(event)"
       onclick="openJob('${p.id}')">
