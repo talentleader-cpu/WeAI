@@ -5243,11 +5243,14 @@ function renderJobsList(list){
 function fmtDate(s){ if(!s) return '—'; const d=new Date(s); return MONTHS[d.getMonth()]+' '+d.getFullYear(); }
 function fmtDateFull(s){ if(!s) return '—'; const d=new Date(s); return d.getDate()+' '+MONTHS[d.getMonth()]+' '+d.getFullYear(); }
 function renderJobsKanban(list){
-  // Si hay un filtro de status activo (p.ej. "Activa"), solo se dibuja esa
-  // columna -- Maricela pidio explicitamente no ver las demas etapas
-  // (Pausada/Cancelada/Contratada/Fantasma) cuando solo quiere ver Activas.
-  const statusesToShow = jobsFilters.status ? JOB_STATUSES.filter(s=>s.k===jobsFilters.status) : JOB_STATUSES;
-  const cols=statusesToShow.map(s=>{
+  // 2026-10-01: Maricela fue explicita -- SI quiere ver las 5 columnas/stages
+  // (Activa, Pausada, Cancelada, Contratada, Fantasma) siempre. Lo que no
+  // quiere ver por default son las POSICIONES dentro de las otras columnas.
+  // Por eso aqui siempre se dibujan las 5 columnas; el filtro de status en
+  // jobsFilters (default 'open' al entrar) ya deja `list` solo con las
+  // Activas, asi que las demas columnas se ven vacias ("Drop positions
+  // here") sin desaparecer del tablero.
+  const cols=JOB_STATUSES.map(s=>{
     const items=list.filter(p=>(p.status||'open')===s.k);
     const cards=items.map(jobCard).join('') || '<div class="kempty">Drop positions here</div>';
     return `<div class="kcol" data-k="${s.k}"
