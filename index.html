@@ -69,7 +69,7 @@
   tr.row:hover{background:#f3f8fd;cursor:pointer;}
   .name{font-weight:600;color:var(--blue);}
   .chips{display:flex;flex-wrap:wrap;gap:4px;}
-  .chip{background:#eaf2fb;color:var(--navy);border-radius:100px;padding:2px 9px;font-size:11.5px;font-weight:600;}
+  .chip{background:#eaf2fb;color:var(--navy);border-radius:100px;padding:2px 9px;font-size:11.5px;font-weight:600;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle;}
   .eng{background:#eafaf4;color:#0f7a54;border-radius:100px;padding:2px 9px;font-size:11.5px;font-weight:600;white-space:nowrap;}
   a.cv{color:var(--teal);font-weight:600;text-decoration:none;}
   .pager{display:flex;align-items:center;gap:12px;justify-content:center;margin-top:16px;}
@@ -3190,7 +3190,7 @@ function tsRenderRows(){
   const tb=document.getElementById('tsRows'); if(!tb) return;
   if(!currentRows.length){ tb.innerHTML='<tr><td colspan="8" class="muted" style="padding:22px">No candidates match these filters.</td></tr>'; return; }
   tb.innerHTML=currentRows.map((r,i)=>{
-    const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip">${esc(s)}</span>`).join('');
+    const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip" title="${esc(s)}">${esc(s)}</span>`).join('');
     const more=(r.skills||[]).length>3?`<span class="chip">+${r.skills.length-3}</span>`:'';
     const eng=r.english_level?`<span class="eng">${esc(r.english_level)}</span>`:'<span class="muted">—</span>';
     const exp=r.experience_years!=null?r.experience_years+' yr':'—';
@@ -3661,7 +3661,7 @@ function renderRows(){
   const tb=document.getElementById('rows');
   if(!currentRows.length){ tb.innerHTML='<tr><td colspan="7" class="muted">No results.</td></tr>'; return; }
   tb.innerHTML=currentRows.map((r,i)=>{
-    const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip">${esc(s)}</span>`).join('');
+    const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip" title="${esc(s)}">${esc(s)}</span>`).join('');
     const more=(r.skills||[]).length>3?`<span class="chip">+${r.skills.length-3}</span>`:'';
     const eng=r.english_level?`<span class="eng">${esc(r.english_level)}</span>`:'<span class="muted">—</span>';
     const exp=r.experience_years!=null?r.experience_years+' yr':'—';
@@ -4453,7 +4453,7 @@ function acCSS(){
   .ac-meta{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:#41505f;margin-bottom:9px}
   .ac-meta b{color:var(--navy,#00415E)}
   .ac-chips{display:flex;flex-wrap:wrap;gap:5px}
-  .ac-chips .chip{background:#eef4fb;color:#0653A1;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600}
+  .ac-chips .chip{background:#eef4fb;color:#0653A1;border-radius:999px;padding:2px 9px;font-size:11.5px;font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle}
   .ac-pager{display:flex;gap:10px;align-items:center;justify-content:center;margin:20px 0 8px}
   .ac-pager button{border:1px solid var(--line,#dbe2ea);background:#fff;border-radius:9px;padding:8px 16px;font-weight:700;cursor:pointer}
   .ac-pager button:disabled{opacity:.45;cursor:default}
@@ -4552,7 +4552,7 @@ function acRender(){
   let body;
   if(acView==='cards'){
     body='<div class="ac-cards">'+currentRows.map((r,i)=>{
-      const skills=(r.skills||[]).slice(0,4).map(s=>`<span class="chip">${esc(s)}</span>`).join('');
+      const skills=(r.skills||[]).slice(0,4).map(s=>`<span class="chip" title="${esc(s)}">${esc(s)}</span>`).join('');
       const more=(r.skills||[]).length>4?`<span class="chip">+${r.skills.length-4}</span>`:'';
       const nm=r.full_name||'(no name)';
       return `<div class="ac-card" onclick="openDrawer(${i})">
@@ -4569,7 +4569,7 @@ function acRender(){
     body=`<table class="ac-tbl"><thead><tr>
       <th>Name</th><th>English</th><th>Exp</th><th>Location</th><th>Skills</th><th>Source</th><th>CV</th></tr></thead><tbody>`+
       currentRows.map((r,i)=>{
-        const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip">${esc(s)}</span>`).join('');
+        const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip" title="${esc(s)}">${esc(s)}</span>`).join('');
         const more=(r.skills||[]).length>3?`<span class="chip">+${r.skills.length-3}</span>`:'';
         const cv=r.resume_url?`<a class="cv" href="${esc(r.resume_url)}" target="_blank" onclick="event.stopPropagation()">View</a>`:'<span class="muted">—</span>';
         return `<tr class="row" onclick="openDrawer(${i})">
