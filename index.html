@@ -3643,16 +3643,15 @@ function renderComingSoon(m){
 }
 
 async function loadPage(){
-  const from=page*PAGE_SIZE, to=from+PAGE_SIZE-1;
-  let query=sb.from('candidates')
-    .select('id, full_name, email, phone, english_level, experience_years, skills, location, resume_url, external_id, import_data, raw_cv_pdf_url, wexpand_cv_url, legacy_psychometrics_url, evaluation_matrix_url, deep_interview_url',{count:'exact'});
-  if(q){ const s=q.replace(/[,%]/g,' ').trim();
-    query=query.or(`full_name.ilike.%${s}%,email.ilike.%${s}%,location.ilike.%${s}%`); }
-  query=query.order('full_name',{nullsFirst:false}).range(from,to);
-  const {data,count,error}=await query;
+  const from=page*PAGE_SIZE;
+  const s=q?q.replace(/[,%]/g,' ').trim():'';
+  const terms=s?splitTerms(s):null;
+  const {data,error}=await sb.rpc('search_candidates',{p_terms:terms,p_limit:PAGE_SIZE,p_offset:from});
   const rowsEl=document.getElementById('rows'); if(!rowsEl) return;
   if(error){ rowsEl.innerHTML=`<tr><td colspan="7" class="muted">Error: ${error.message}</td></tr>`; return; }
-  total=count||0; currentRows=data||[];
+  const rows=data||[];
+  total=rows.length?Number(rows[0].total_count||0):0;
+  currentRows=rows.map(r=>{ const {total_count,...rest}=r; return rest; });
   renderRows(); renderPager();
   document.getElementById('count').textContent=total.toLocaleString('en-US')+" candidates";
 }
@@ -4530,14 +4529,15 @@ function acSetView(v){ acView=v; const t=document.getElementById('acTbl'), c=doc
 async function acLoad(){
   if(acBusy) return; acBusy=true;
   const host=document.getElementById('acBody'); if(host) host.innerHTML='<div class="muted" style="padding:22px">Loading…</div>';
-  const from=acPage*PAGE_SIZE, to=from+PAGE_SIZE-1;
-  let q=sb.from('candidates').select('id,full_name,email,phone,english_level,experience_years,skills,location,source,linkedin_url,resume_url,avatar_url,salary_expectation,external_id,applied_at,import_data,raw_cv_pdf_url,wexpand_cv_url,legacy_psychometrics_url,evaluation_matrix_url,deep_interview_url',{count:'exact'});
+  const from=acPage*PAGE_SIZE;
   const term=(acQ||'').trim();
-  if(term){ splitTerms(term).forEach(t=>{ q=q.or(TS_TEXTCOLS.map(c=>`${c}.ilike.%${t}%`).join(',')); }); }
-  const {data,count,error}=await q.order('full_name',{nullsFirst:false}).range(from,to);
+  const terms=term?splitTerms(term):null;
+  const {data,error}=await sb.rpc('search_candidates',{p_terms:terms,p_limit:PAGE_SIZE,p_offset:from});
   acBusy=false;
   if(error){ if(host) host.innerHTML='<div class="muted" style="padding:22px">Error: '+esc(error.message)+'</div>'; return; }
-  acTotal=count||0; currentRows=data||[];
+  const rows=data||[];
+  acTotal=rows.length?Number(rows[0].total_count||0):0;
+  currentRows=rows.map(r=>{ const {total_count,...rest}=r; return rest; });
   acRender();
 }
 function acRender(){
