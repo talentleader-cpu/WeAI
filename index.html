@@ -163,6 +163,13 @@
   .pwp-sum-chips{display:flex;flex-wrap:wrap;gap:6px;}
   .pwp-li{font-size:12px;color:var(--blue);text-decoration:none;font-weight:700;}
   .pwp-li:hover{text-decoration:underline;}
+  .pwdocs{display:flex;flex-direction:column;gap:6px;}
+  .pwdoc{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;}
+  .pwdoc .dn{font-weight:700;font-size:12.5px;min-width:130px;color:var(--navy);}
+  .pwdoc .ds{font-size:11.5px;color:var(--muted);flex:1;min-width:90px;}
+  .pwdoc .ds.ok{color:#1c7a57;font-weight:600;}
+  .pwdoc .btn-ghost{padding:5px 10px;font-size:11.5px;text-decoration:none;}
+  .pwdoc-big{width:100%;height:60vh;border:1px solid var(--line);border-radius:10px;margin-top:10px;}
   .pwp-sum-acts{display:flex;flex-wrap:wrap;gap:8px;}
   .pwp-sum-acts .btn-ghost{padding:7px 12px;font-size:12px;}
   .pwp-comments{border-top:1px solid var(--line);margin-top:4px;padding-top:10px;}
@@ -5444,7 +5451,7 @@ async function openJob(id, from){
 }
 async function pwLoadApps(){
   const {data}=await sb.from('applications')
-    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,client_visible, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url)')
+    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,client_visible,wtim_pdf_url,assessment_pdf_url,matrix_pdf_url,video_interview_url, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url)')
     .eq('position_id',pwPos.id).order('created_at',{ascending:true});
   pwApps=data||[];
   pwVideoEmails=new Set();
@@ -7057,6 +7064,7 @@ async function pwOpenClientView(){
     <div style="border-top:1px solid #e6ebf2;padding-top:12px;margin-top:8px;margin-bottom:4px">
       <div style="font-size:11px;font-weight:800;text-transform:uppercase;color:var(--muted);margin-bottom:2px">Evaluation &amp; process</div>
       ${fieldRow('matrix','Evaluation matrix')}
+      ${fieldRow('matrix_pdf','Evaluation matrix (PDF)','Only shown for candidates that have a matrix PDF uploaded.')}
       ${fieldRow('video','Video interview')}
       ${fieldRow('wtim_pdf','WTIM™ report (PDF)','Only shown for candidates that have a WTIM™ PDF uploaded.')}
       ${fieldRow('assessment_pdf','Technical assessment (PDF)','Only shown for candidates that have an assessment PDF uploaded.')}
@@ -7127,6 +7135,7 @@ async function pwSaveClientView(){
     linkedin_url:document.getElementById('cvf_linkedin_url').checked,
     cv:document.getElementById('cvf_cv').checked,
     matrix:document.getElementById('cvf_matrix').checked,
+    matrix_pdf:document.getElementById('cvf_matrix_pdf').checked,
     video:document.getElementById('cvf_video').checked,
     wtim_pdf:document.getElementById('cvf_wtim_pdf').checked,
     assessment_pdf:document.getElementById('cvf_assessment_pdf').checked,
@@ -7298,9 +7307,9 @@ function pwPreviewRender(){
           ${c.location?`<span class="chip">${esc(c.location)}</span>`:''}
           ${c.salary_expectation?`<span class="chip" title="Salary expectation">Salary: ${esc(c.salary_expectation)}</span>`:''}
           ${hasVideo?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Video ✓</span>':''}
-          ${s.has_wtim?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">WTIM ✓</span>':''}
-          ${s.has_assessment?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Assessment ✓</span>':''}
-          ${s.has_evaluation_matrix?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Eval. Matrix ✓</span>':''}
+          ${(s.has_wtim||a.wtim_pdf_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">WTIM ✓</span>':''}
+          ${(s.has_assessment||a.assessment_pdf_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Assessment ✓</span>':''}
+          ${(s.has_evaluation_matrix||a.matrix_pdf_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Eval. Matrix ✓</span>':''}
           ${c.wexpand_cv_url?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Wexpand CV ✓</span>':''}
         </div>
         ${c.linkedin_url?`<a href="${esc(c.linkedin_url)}" target="_blank" class="pwp-li">LinkedIn profile ↗</a>`:''}
@@ -7308,11 +7317,15 @@ function pwPreviewRender(){
     </div>
     <div class="pwp-sum-acts">
       <button class="btn-ghost" onclick="pwOpenVideo('${a.id}')">${hasVideo?'Watch video interview':'Video interview'}</button>
-      <button class="btn-ghost" onclick="pwOpenWtim('${a.id}')">WTIM${s.has_wtim?' report':''}</button>
-      <button class="btn-ghost" onclick="pwOpenTech('${a.id}')">Assessment${s.has_assessment?' report':''}</button>
-      <button class="btn-ghost" onclick="pwOpenEvalMatrix('${a.id}')">Evaluation Matrix${s.has_evaluation_matrix?' ✓':''}</button>
+      <button class="btn-ghost" onclick="pwOpenDoc('wtim','${a.id}')">WTIM${(s.has_wtim||a.wtim_pdf_url)?' ✓':''}</button>
+      <button class="btn-ghost" onclick="pwOpenDoc('assessment','${a.id}')">Assessment${(s.has_assessment||a.assessment_pdf_url)?' ✓':''}</button>
+      <button class="btn-ghost" onclick="pwOpenDoc('matrix','${a.id}')">Evaluation Matrix${(s.has_evaluation_matrix||a.matrix_pdf_url)?' ✓':''}</button>
       <button class="btn-ghost" onclick="cvConvert('${c.id}', this)" title="${c.raw_cv_pdf_url||c.resume_url?'Convert this resume to the Wexpand format':'Needs a real resume (PDF) imported first'}">${c.wexpand_cv_url?'Re-convert':'Wexpand format'}</button>
       ${c.wexpand_cv_url?`<a class="btn-ghost" style="text-decoration:none" href="${esc(c.wexpand_cv_url)}" target="_blank">View Wexpand CV ↗</a>`:''}
+    </div>
+    <div class="pwp-comments">
+      <div class="pwp-comments-h">Documents &amp; video${a.client_visible?' <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:600">· this candidate is shared with the client</span>':''}</div>
+      <div id="pwpDocs" class="pwdocs"></div>
     </div>
     <div class="pwp-comments">
       <div class="pwp-comments-h">Recruiter comments</div>
@@ -7330,6 +7343,7 @@ function pwPreviewRender(){
       <div id="pwpHistory" class="pwp-comments-list"><p class="muted" style="font-size:12px">Loading…</p></div>
     </div>`;
   pwCommentsLoad(a.id);
+  pwDocsRender(a);
   if(c.id) pwHistoryLoad(c.id);
 }
 async function pwHistoryLoad(candId){
@@ -7416,6 +7430,86 @@ async function pwAddComment(appId){
     await pwCommentsLoad(appId);
   }catch(e){ toast('Could not post comment: '+(e.message||e)); }
   finally{ if(btn){ btn.disabled=false; btn.textContent='Post'; } }
+}
+
+// ===== Documents & video inside the candidate profile (Jobs preview) =====
+const PW_DOCS={
+  wtim:{field:'wtim_pdf_url',label:'WTIM™',sys:'pwOpenWtim',sysLabel:'View WTIM report in WeAI'},
+  assessment:{field:'assessment_pdf_url',label:'Assessment',sys:'pwOpenTech',sysLabel:'View assessment result in WeAI'},
+  matrix:{field:'matrix_pdf_url',label:'Evaluation Matrix',sys:'pwOpenEvalMatrix',sysLabel:'View matrix scores in WeAI'}
+};
+function pwDocsRender(a){
+  const box=document.getElementById('pwpDocs'); if(!box||!a) return;
+  const c=a.candidates||{};
+  const row=(kind)=>{
+    const d=PW_DOCS[kind], url=a[d.field];
+    return `<div class="pwdoc"><span class="dn">${d.label}</span>
+      <span class="ds ${url?'ok':''}">${url?'PDF uploaded ✓':'No PDF yet'}</span>
+      ${url?`<a class="btn-ghost" href="${esc(url)}" target="_blank" rel="noopener">View PDF</a>`:''}
+      <button class="btn-ghost" onclick="pwDocUpload('${kind}','${a.id}')">${url?'Replace':'Upload PDF'}</button>
+    </div>`;
+  };
+  const hasVideo=c.email && pwVideoEmails.has(c.email.toLowerCase());
+  const hf=(a.video_interview_url||'').trim();
+  const videoRow=`<div class="pwdoc"><span class="dn">Video interview</span>
+      <span class="ds ${hasVideo||hf?'ok':''}">${hasVideo?'Video on file ✓':(hf?'External video link ✓':'Not recorded yet')}</span>
+      ${hasVideo?`<button class="btn-ghost" onclick="pwOpenVideo('${a.id}')">Watch</button>`:''}
+      ${/^https?:\/\//i.test(hf)?`<a class="btn-ghost" href="${esc(hf)}" target="_blank" rel="noopener">Open link</a>`:''}
+    </div>`;
+  const cvUrl=c.wexpand_cv_url;
+  const cvRow=`<div class="pwdoc"><span class="dn">Wexpand CV</span>
+      <span class="ds ${cvUrl?'ok':''}">${cvUrl?'Ready ✓':'Not generated yet'}</span>
+      ${cvUrl?`<a class="btn-ghost" href="${esc(cvUrl)}" target="_blank" rel="noopener">View PDF</a>`:''}
+    </div>`;
+  box.innerHTML=videoRow+row('wtim')+row('assessment')+row('matrix')+cvRow;
+}
+function pwOpenDoc(kind,appId){
+  const a=pwApps.find(x=>x.id===appId); if(!a) return;
+  const d=PW_DOCS[kind]; const c=a.candidates||{}; const url=a[d.field];
+  showModal(d.label+' · '+(c.full_name||''), `
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn-primary" onclick="pwDocUpload('${kind}','${appId}')">${url?'Replace PDF':'Upload PDF'}</button>
+      ${url?`<a class="btn-ghost" style="text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">Open in new tab ↗</a>
+      <button class="btn-ghost" onclick="pwDocRemove('${kind}','${appId}')">Remove PDF</button>`:''}
+      <button class="btn-ghost" onclick="closeModal();${d.sys}('${appId}')">${d.sysLabel}</button>
+    </div>
+    <p class="muted" style="font-size:12px;margin:10px 0 0">${url?'This PDF is saved in this candidate’s profile for this position.':'No PDF uploaded yet. Upload the report you have outside the system and it will stay in this profile.'}
+      ${a.client_visible?' It is shown to the client if the “'+esc(d.label)+'” option is on in the position’s client view.':' It is only visible to the client once the candidate is shared with them.'}</p>
+    ${url?`<iframe class="pwdoc-big" src="${esc(url)}"></iframe>`:''}`);
+}
+function pwDocUpload(kind,appId){
+  const a=pwApps.find(x=>x.id===appId); if(!a) return;
+  const d=PW_DOCS[kind];
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf';
+  inp.onchange=async()=>{
+    const file=inp.files&&inp.files[0]; if(!file) return;
+    if(file.type && file.type!=='application/pdf'){ toast('Please choose a PDF file.'); return; }
+    if(file.size>25*1024*1024){ toast('That PDF is larger than 25 MB.'); return; }
+    toast('Uploading…');
+    try{
+      const path=`${appId}/${d.field}-${Date.now()}.pdf`;
+      const {error:upErr}=await sb.storage.from('assessment-docs').upload(path,file,{contentType:'application/pdf',upsert:true});
+      if(upErr) throw upErr;
+      const url=sb.storage.from('assessment-docs').getPublicUrl(path).data.publicUrl;
+      const {error}=await sb.from('applications').update({[d.field]:url}).eq('id',appId);
+      if(error) throw error;
+      a[d.field]=url;
+      toast(d.label+' PDF saved');
+      if(pwApps[pwPreviewIdx]&&pwApps[pwPreviewIdx].id===appId) pwPreviewRender();
+      if(document.getElementById('modalWrap').classList.contains('open')) pwOpenDoc(kind,appId);
+    }catch(e){ toast('Could not upload: '+(e.message||e)); }
+  };
+  inp.click();
+}
+function pwDocRemove(kind,appId){
+  const a=pwApps.find(x=>x.id===appId); if(!a) return;
+  const d=PW_DOCS[kind];
+  showModal('Remove PDF?', `<p>Remove the ${esc(d.label)} PDF from this candidate’s profile? The client will stop seeing it.</p>`, 'Remove', async ()=>{
+    const {error}=await sb.from('applications').update({[d.field]:null}).eq('id',appId);
+    if(error){ toast('Could not remove: '+error.message); return; }
+    a[d.field]=null; closeModal(); toast('PDF removed');
+    if(pwApps[pwPreviewIdx]&&pwApps[pwPreviewIdx].id===appId) pwPreviewRender();
+  });
 }
 async function pwOpenEvalMatrix(appId){
   const a=pwApps.find(x=>x.id===appId); if(!a) return;
