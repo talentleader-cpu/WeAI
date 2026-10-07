@@ -625,6 +625,12 @@
   .cvfb h4{margin:4px 0 0;font-size:16px;color:#14243f}
   .cvfb p{margin:0 0 6px;color:#66758c;line-height:1.5;font-size:13.5px}
   .pwp-doc{min-height:380px}
+  .pwp-docx{position:absolute;inset:0;overflow:auto;background:#e9edf3;padding:14px}
+  .pwp-docx-bar{position:sticky;top:-14px;z-index:2;display:flex;gap:14px;align-items:center;margin:-14px -14px 12px;padding:9px 14px;background:#fff;border-bottom:1px solid var(--line);font-size:12.5px}
+  .pwp-docx-bar span{font-weight:700;color:#14243f;margin-right:auto}
+  .pwp-docx-bar a{color:#1d4ba3;font-weight:600;text-decoration:none}
+  .pwp-docx .docx-wrapper{background:transparent!important;padding:0!important}
+  .pwp-docx .docx-wrapper>section.docx{background:#fff;box-shadow:0 2px 12px rgba(20,40,80,.15);margin:0 auto 14px!important;max-width:100%}
 
   /* ===== Design v2.1: candidate modal in two columns, form controls, small fixes ===== */
   html body select,html body input,html body textarea,html body button{font-family:inherit}
@@ -784,6 +790,7 @@ html body #login{background:radial-gradient(1200px 600px at 20% -10%,#0B57A8 0%,
       <button class="pwp-nav pwp-prev" onclick="pwPreviewPrev()" title="Previous candidate (←)">‹</button>
       <div class="pwp-doc">
         <iframe id="pwpFrame" title="Resume preview"></iframe>
+        <div id="pwpDocx" class="pwp-docx" style="display:none"></div>
         <div id="pwpNoCv" class="pwp-nocv"></div>
       </div>
       <button class="pwp-nav pwp-next" onclick="pwPreviewNext()" title="Next candidate (→)">›</button>
@@ -7599,14 +7606,38 @@ function cvKind(url){
   if(/supabase\.co\/storage/i.test(u)) return 'pdf';
   return 'external';
 }
+
+let cvDocxTok=0;
+async function cvRenderDocx(url, box){
+  await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+  await loadScript('https://cdn.jsdelivr.net/npm/docx-preview@0.3.3/dist/docx-preview.min.js');
+  if(!window.docx||!window.docx.renderAsync) return false;
+  const r=await fetch(url); if(!r.ok) return false;
+  const blob=await r.blob();
+  const tok=cvDocxTok;
+  box.innerHTML='';
+  await window.docx.renderAsync(blob, box, null, {className:'docx', inWrapper:true, ignoreWidth:false, ignoreHeight:true, breakPages:false, useBase64URL:true});
+  if(tok!==cvDocxTok) return false;
+  const bar=document.createElement('div'); bar.className='pwp-docx-bar';
+  bar.innerHTML=`<span>Word document</span><a href="https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(url)}" target="_blank" rel="noopener">Layout looks off? View with Office ↗</a><a href="${esc(url)}" target="_blank" rel="noopener" download>Download</a>`;
+  box.prepend(bar);
+  return true;
+}
 function cvViewerLoad(cv, frame, noCv){
   const kind=cvKind(cv);
+  cvDocxTok++; const _bx=document.getElementById('pwpDocx'); if(_bx){ _bx.style.display='none'; _bx.innerHTML=''; }
   if(kind==='pdf'||kind==='image'){
     noCv.style.display='none'; frame.style.display='block'; frame.src=cv; return;
   }
   if(kind==='office'){
-    noCv.style.display='none'; frame.style.display='block';
-    frame.src='https://view.officeapps.live.com/op/embed.aspx?src='+encodeURIComponent(cv); return;
+    noCv.style.display='none'; frame.style.display='none'; frame.src='about:blank';
+    const isDocx=/\.docx$/.test(cv.split('?')[0].toLowerCase());
+    const box=document.getElementById('pwpDocx');
+    const officeFallback=()=>{ if(box) box.style.display='none'; frame.style.display='block'; frame.src='https://view.officeapps.live.com/op/embed.aspx?src='+encodeURIComponent(cv); };
+    if(!isDocx || !box){ officeFallback(); return; }
+    const tok=++cvDocxTok; box.style.display='block'; box.innerHTML='<div class="cvfb"><p>Loading resume…</p></div>';
+    cvRenderDocx(cv, box).then(ok=>{ if(tok!==cvDocxTok) return; if(!ok) officeFallback(); }).catch(()=>{ if(tok===cvDocxTok) officeFallback(); });
+    return;
   }
   frame.style.display='none'; frame.src='about:blank'; noCv.style.display='flex';
   if(kind==='external'){
