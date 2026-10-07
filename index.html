@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-07b -->
+<!-- build 2026-10-07c -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4392,6 +4392,28 @@ function wtimBlockHtml(title, items){
       <span class="pct">${s.standardized!=null?s.standardized+'%':'—'}</span>
     </div>`).join('')}</div>`;
 }
+function wtimOverallHtml(res, lang){
+  const en = lang==='en';
+  const ov=(res.scores||[]).find(s=>s.scope==='overall_match');
+  const bd=ov && ov.detail && ov.detail.breakdown;
+  if(!ov || !bd || !bd.length) return '';
+  const N=en?{personality:'Personality (Big Five)',cognitive:'Cognitive',sjt:'Situational Judgment (SJT)'}:{personality:'Personalidad (Big Five)',cognitive:'Cognitivo',sjt:'Juicio situacional (SJT)'};
+  const T=en?{h:'How the Overall Match is calculated',st:'Stage',w:'Weight',sc:'Score',pt:'Points',tot:'Overall Match',
+    note:'Each stage score (0-100%) is multiplied by its weight. The weights add up to 100%, and the points add up to the Overall Match.'}
+           :{h:'Cómo se calcula el Overall Match',st:'Etapa',w:'Peso',sc:'Resultado',pt:'Puntos',tot:'Overall Match',
+    note:'El resultado de cada etapa (0-100%) se multiplica por su peso. Los pesos suman 100% y los puntos suman el Overall Match.'};
+  const order={cognitive:1,personality:2,sjt:3};
+  const rows=bd.slice().sort((a,b)=>(order[a.family]||9)-(order[b.family]||9));
+  const td='padding:7px 8px;border-bottom:1px solid #e3eaef;font-size:13px';
+  return `<div style="margin:16px 0;border:1px solid #d6e1e7;border-radius:12px;padding:14px 16px;background:#f7fafb">
+    <div style="font-weight:800;color:#00415E;font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">${T.h}</div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="color:#6A7E89;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em"><th style="${td};text-align:left">${T.st}</th><th style="${td};text-align:right">${T.w}</th><th style="${td};text-align:right">${T.sc}</th><th style="${td};text-align:right">${T.pt}</th></tr>
+      ${rows.map(r=>`<tr><td style="${td}">${N[r.family]||esc(r.family)}</td><td style="${td};text-align:right">${r.weight_pct}%</td><td style="${td};text-align:right">${r.score}%</td><td style="${td};text-align:right;font-weight:700">${r.points}</td></tr>`).join('')}
+      <tr><td style="${td};font-weight:800">${T.tot}</td><td style="${td};text-align:right;font-weight:800">${rows.reduce((a,r)=>a+Number(r.weight_pct),0)}%</td><td style="${td}"></td><td style="${td};text-align:right;font-weight:800;color:#C2703A;font-size:15px">${ov.standardized}%</td></tr>
+    </table>
+    <div style="font-size:12px;color:#6A7E89;margin-top:8px;line-height:1.5">${T.note}</div></div>`;
+}
 function wtimOpen(i){
   const res=wtimResults[i]; if(!res){ toast('Please reopen the report'); return; }
   const r=drawerCand||{};
@@ -4405,11 +4427,13 @@ function wtimOpen(i){
         <div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:26px;line-height:1;color:var(--navy)">WTIM™ Report</div></div>
       <div class="muted" style="font-size:12.5px;text-align:right">Completed ${res.session.completed_at?fmtDay(res.session.completed_at):'—'}</div>
     </div>`;
+  const ovm=res.scores.find(s=>s.scope==='overall_match');
   const overview=`<div style="display:flex;gap:18px;margin-top:10px;flex-wrap:wrap">
+    ${ovm?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:#C2703A">${ovm.standardized}%</div><div class="wt-sub">Overall Match</div></div>`:''}
     ${cog?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:${wtimBarColor(cog.standardized)}">${cog.standardized}%</div><div class="wt-sub">Cognitive</div></div>`:''}
     ${sjt?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:${wtimBarColor(sjt.standardized)}">${sjt.standardized}%</div><div class="wt-sub">SJT</div></div>`:''}
     ${persItems.length?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:var(--navy)">${persItems.length}/5</div><div class="wt-sub">Big Five Domains</div></div>`:''}
-  </div>`;
+  </div>` + wtimOverallHtml(res,'en');
   const body = wtimBlockHtml('Cognitive Reasoning', cogItems) + wtimBlockHtml('Personality (Big Five)', persItems) + wtimBlockHtml('Situational Judgment (SJT)', sjtItems)
     + `<div class="wt-analysis"><b style="display:block;margin-bottom:6px;color:var(--navy)">Analysis</b>${wtimAnalysisHtml(res.scores,'en')}</div>
        <p class="wt-disclaimer">Probabilistic language, not deterministic: these results suggest tendencies, not certainties. WTIM™ is in pilot phase — it is an input for human decision-making, never an automatic filter.</p>`;
@@ -4493,10 +4517,12 @@ function wtimDownload(i, lang){
   const cogItemsLabeled = en ? cogItems.map(s=>({...s, scale_name: wtimConstructLabelEn(s.construct, s.scale_name||s.construct_name)})) : cogItems;
   const sjtItemsLabeled = en ? sjtItems.map(s=>({...s, scale_name: wtimConstructLabelEn(s.construct, s.construct_name), construct_name: wtimConstructLabelEn(s.construct, s.construct_name)})) : sjtItems;
   const posTitle=(res.app.positions&&res.app.positions.title)||'—';
-  const kpis=`${cog?`<div class="kpi"><b>${cog.standardized}%</b><span>${en?'Cognitive':'Cognitivo'}</span></div>`:''}
+  const ovp=res.scores.find(s=>s.scope==='overall_match');
+  const kpis=`${ovp?`<div class="kpi"><b style="color:#C2703A">${ovp.standardized}%</b><span>Overall Match</span></div>`:''}
+    ${cog?`<div class="kpi"><b>${cog.standardized}%</b><span>${en?'Cognitive':'Cognitivo'}</span></div>`:''}
     ${sjt?`<div class="kpi"><b>${sjt.standardized}%</b><span>${en?'Situational Judgment':'Juicio situacional'}</span></div>`:''}
     ${persItems.length?`<div class="kpi"><b>${persItems.length}/5</b><span>${en?'Big Five Domains':'Dominios Big Five'}</span></div>`:''}`;
-  const sections=`${cogItems.length?`<h2>${en?'Cognitive Reasoning':'Razonamiento cognitivo'}</h2>${bar(cogItemsLabeled)}`:''}
+  const sections=`${wtimOverallHtml(res,lang)}${cogItems.length?`<h2>${en?'Cognitive Reasoning':'Razonamiento cognitivo'}</h2>${bar(cogItemsLabeled)}`:''}
     ${persItems.length?`<h2>${en?'Personality (Big Five)':'Personalidad (Big Five)'}</h2>${bar(persItemsLabeled)}`:''}
     ${sjtItems.length?`<h2>${en?'Situational Judgment by competency':'Juicio situacional por competencia'}</h2>${bar(sjtItemsLabeled)}`:''}`;
   const footNote = en
