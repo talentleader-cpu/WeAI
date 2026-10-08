@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-08e -->
+<!-- build 2026-10-08f -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -6416,6 +6416,7 @@ function aiGenPaint(wrap){
         <p>Different from WTIM™: this verifies <b>concrete expertise</b> (Excel, code, specific tools) tailored to this position (JD + intake + approved requirements). Everything comes in as a draft — you review and approve it before it is served to any candidate.</p>
       </div>
       <div class="aig-btns">
+        <select id="aiGenLang" class="aig-btn" style="padding:6px 8px" title="Language of the technical assessment"><option value="en" ${aiGenLang==='en'?'selected':''} >English</option><option value="es" ${aiGenLang==='es'?'selected':''}>Español</option></select>
         <button class="aig-btn" ${aiGenBusy?'disabled':''} onclick="aiGenTrigger('technical')">Generate technical</button>
         <button class="aig-btn" ${aiGenBusy?'disabled':''} onclick="aiGenTrigger('work_sample')">Generate work sample</button>
       </div>
@@ -6456,14 +6457,16 @@ function aiGenLogRow(l){
   </div>`;
 }
 function aiGenToggle(id){ aiGenExpanded = aiGenExpanded===id ? null : id; aiGenPaint(document.getElementById('aiGenWrap')); }
+let aiGenLang='en';
 async function aiGenTrigger(family){
   if(!pwPos) return;
+  { const el=document.getElementById('aiGenLang'); if(el) aiGenLang=el.value||'en'; }
   aiGenBusy=true; aiGenPaint(document.getElementById('aiGenWrap'));
   try{
     const {data,error}=await sb.functions.invoke('generate-assessment-content',{body:{
       position_id: pwPos.id, generate:[family],
       technical_count: family==='technical'?8:0, work_sample_count: family==='work_sample'?1:0,
-      actor_id: currentUser&&currentUser.id
+      actor_id: currentUser&&currentUser.id, language: aiGenLang
     }});
     if(error) throw error;
     if(data && data.ok===false) throw new Error(data.message||'Error generating');
