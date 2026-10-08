@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-08c -->
+<!-- build 2026-10-08d -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4485,7 +4485,7 @@ function reportDocShell(title, sub, r, posTitle, completedAt, kpisHtml, sections
     *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
     .anwrap{break-inside:avoid;page-break-inside:avoid}
     h2{break-after:avoid}
-    @media print{ .printbar{display:none} body{padding:20px 0} }
+    @page{size:A4;margin:14mm 12mm} @media print{ .printbar{display:none} body{padding:0} .sec{break-inside:avoid;page-break-inside:avoid} }
   </style></head><body>
   <div class="printbar"><button onclick="window.print()">${L.print}</button></div>
   <div class="top"><div><h1>${esc(title)}</h1><div style="font-size:11px;color:var(--muted);letter-spacing:.04em">${esc(sub)}</div></div>
@@ -4532,9 +4532,9 @@ function wtimDownload(i, lang){
     ${cog?`<div class="kpi"><b>${cog.standardized}%</b><span>${en?'Cognitive':'Cognitivo'}</span></div>`:''}
     ${sjt?`<div class="kpi"><b>${sjt.standardized}%</b><span>${en?'Situational Judgment':'Juicio situacional'}</span></div>`:''}
     ${persItems.length?`<div class="kpi"><b>${wtimPersPct(res.scores)}%</b><span>${en?'Personality':'Personalidad'}</span></div>`:''}`;
-  const sections=`${wtimOverallHtml(res,lang)}${cogItems.length?`<h2>${en?'Cognitive Reasoning':'Razonamiento cognitivo'}</h2>${bar(cogItemsLabeled)}`:''}
-    ${persItems.length?`<h2>${en?'Personality (Big Five)':'Personalidad (Big Five)'}</h2>${bar(persItemsLabeled)}`:''}
-    ${sjtItems.length?`<h2>${en?'Situational Judgment by competency':'Juicio situacional por competencia'}</h2>${bar(sjtItemsLabeled)}`:''}`;
+  const sections=`${wtimOverallHtml(res,lang)}${cogItems.length?`<div class="sec"><h2>${en?'Cognitive Reasoning':'Razonamiento cognitivo'}</h2>${bar(cogItemsLabeled)}</div>`:''}
+    ${persItems.length?`<div class="sec"><h2>${en?'Personality (Big Five)':'Personalidad (Big Five)'}</h2>${bar(persItemsLabeled)}</div>`:''}
+    ${sjtItems.length?`<div class="sec"><h2>${en?'Situational Judgment by competency':'Juicio situacional por competencia'}</h2>${bar(sjtItemsLabeled)}</div>`:''}`;
   const footNote = '';
   const doc=reportDocShell('WTIM™', en?'WEXPAND TALENT INTELLIGENCE METHOD':'WEXPAND TALENT INTELLIGENCE METHOD', r, posTitle, res.session.completed_at, kpis, sections, wtimAnalysisHtml(res.scores, lang),
     footNote, lang);
