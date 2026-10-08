@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-07c -->
+<!-- build 2026-10-08a -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4475,6 +4475,9 @@ function reportDocShell(title, sub, r, posTitle, completedAt, kpisHtml, sections
     .foot{margin-top:30px;font-size:10.5px;color:var(--muted);font-style:italic;line-height:1.6;border-top:1px solid var(--line);padding-top:12px}
     .printbar{max-width:760px;margin:16px auto 0;text-align:right}
     .printbar button{font-family:inherit;font-weight:700;background:var(--navy);color:#fff;border:none;border-radius:100px;padding:10px 20px;cursor:pointer}
+    *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    .anwrap{break-inside:avoid;page-break-inside:avoid}
+    h2{break-after:avoid}
     @media print{ .printbar{display:none} body{padding:20px 0} }
   </style></head><body>
   <div class="printbar"><button onclick="window.print()">${L.print}</button></div>
@@ -4483,7 +4486,7 @@ function reportDocShell(title, sub, r, posTitle, completedAt, kpisHtml, sections
   <div class="cand">${esc(r.full_name||'')}</div><div style="font-size:12.5px;color:var(--muted)">${esc(r.email||'')}</div>
   <div class="kpis">${kpisHtml}</div>
   ${sectionsHtml}
-  <h2>${L.analysis}</h2><div class="analysis">${analysisHtml}</div>
+  <div class="anwrap"><h2>${L.analysis}</h2><div class="analysis">${analysisHtml}</div></div>
   <div class="foot">${footNote}</div>
   </body></html>`;
 }
