@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-08b -->
+<!-- build 2026-10-08c -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4233,7 +4233,7 @@ function assessRenderList(box, results, kind){
       if(isWtim){
         const cog=res.scores.find(s=>s.scope==='cognitive_overall'), sjt=res.scores.find(s=>s.scope==='sjt_overall');
         const persCount=res.scores.filter(s=>s.scope==='personality_domain').length;
-        summary=[cog?`Cognitive ${cog.standardized}%`:null, sjt?`SJT ${sjt.standardized}%`:null, persCount?`Personality ${persCount}/5`:null].filter(Boolean).join(' · ')||'No results yet';
+        summary=[cog?`Cognitive ${cog.standardized}%`:null, sjt?`SJT ${sjt.standardized}%`:null, persCount?`Personality ${wtimPersPct(res.scores)}%`:null].filter(Boolean).join(' · ')||'No results yet';
       } else {
         const tech=res.scores.find(s=>s.scope==='technical_overall'); const ws=res.scores.filter(s=>s.scope==='work_sample');
         const passPct=res.session.pass_pct;
@@ -4392,6 +4392,13 @@ function wtimBlockHtml(title, items){
       <span class="pct">${s.standardized!=null?s.standardized+'%':'—'}</span>
     </div>`).join('')}</div>`;
 }
+function wtimPersPct(scores){
+  const arr=(scores||[]);
+  const o=arr.find(x=>x.scope==='personality_overall');
+  if(o && o.standardized!=null) return Math.round(o.standardized);
+  const v=arr.filter(x=>x.scope==='personality_domain').map(x=>Number(x.standardized)).filter(x=>!isNaN(x));
+  return v.length? Math.round(v.reduce((a,b)=>a+b,0)/v.length) : null;
+}
 function wtimOverallHtml(res, lang){
   const en = lang==='en';
   const ov=(res.scores||[]).find(s=>s.scope==='overall_match');
@@ -4432,7 +4439,7 @@ function wtimOpen(i){
     ${ovm?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:#C2703A">${ovm.standardized}%</div><div class="wt-sub">Overall Match</div></div>`:''}
     ${cog?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:${wtimBarColor(cog.standardized)}">${cog.standardized}%</div><div class="wt-sub">Cognitive</div></div>`:''}
     ${sjt?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:${wtimBarColor(sjt.standardized)}">${sjt.standardized}%</div><div class="wt-sub">SJT</div></div>`:''}
-    ${persItems.length?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:var(--navy)">${persItems.length}/5</div><div class="wt-sub">Big Five Domains</div></div>`:''}
+    ${persItems.length?`<div><div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:28px;color:${wtimBarColor(wtimPersPct(res.scores))}">${wtimPersPct(res.scores)}%</div><div class="wt-sub">Personality</div></div>`:''}
   </div>` + wtimOverallHtml(res,'en');
   const body = wtimBlockHtml('Cognitive Reasoning', cogItems) + wtimBlockHtml('Personality (Big Five)', persItems) + wtimBlockHtml('Situational Judgment (SJT)', sjtItems)
     + `<div class="wt-analysis"><b style="display:block;margin-bottom:6px;color:var(--navy)">Analysis</b>${wtimAnalysisHtml(res.scores,'en')}</div>
@@ -4524,7 +4531,7 @@ function wtimDownload(i, lang){
   const kpis=`${ovp?`<div class="kpi"><b style="color:#C2703A">${ovp.standardized}%</b><span>Overall Match</span></div>`:''}
     ${cog?`<div class="kpi"><b>${cog.standardized}%</b><span>${en?'Cognitive':'Cognitivo'}</span></div>`:''}
     ${sjt?`<div class="kpi"><b>${sjt.standardized}%</b><span>${en?'Situational Judgment':'Juicio situacional'}</span></div>`:''}
-    ${persItems.length?`<div class="kpi"><b>${persItems.length}/5</b><span>${en?'Big Five Domains':'Dominios Big Five'}</span></div>`:''}`;
+    ${persItems.length?`<div class="kpi"><b>${wtimPersPct(res.scores)}%</b><span>${en?'Personality':'Personalidad'}</span></div>`:''}`;
   const sections=`${wtimOverallHtml(res,lang)}${cogItems.length?`<h2>${en?'Cognitive Reasoning':'Razonamiento cognitivo'}</h2>${bar(cogItemsLabeled)}`:''}
     ${persItems.length?`<h2>${en?'Personality (Big Five)':'Personalidad (Big Five)'}</h2>${bar(persItemsLabeled)}`:''}
     ${sjtItems.length?`<h2>${en?'Situational Judgment by competency':'Juicio situacional por competencia'}</h2>${bar(sjtItemsLabeled)}`:''}`;
