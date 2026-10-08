@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-08a -->
+<!-- build 2026-10-08b -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -4436,7 +4436,7 @@ function wtimOpen(i){
   </div>` + wtimOverallHtml(res,'en');
   const body = wtimBlockHtml('Cognitive Reasoning', cogItems) + wtimBlockHtml('Personality (Big Five)', persItems) + wtimBlockHtml('Situational Judgment (SJT)', sjtItems)
     + `<div class="wt-analysis"><b style="display:block;margin-bottom:6px;color:var(--navy)">Analysis</b>${wtimAnalysisHtml(res.scores,'en')}</div>
-       <p class="wt-disclaimer">Probabilistic language, not deterministic: these results suggest tendencies, not certainties. WTIM™ is in pilot phase — it is an input for human decision-making, never an automatic filter.</p>`;
+       `;
   const html=`<div id="wtBg" style="position:fixed;inset:0;background:rgba(8,26,44,.55);z-index:90;display:flex;align-items:center;justify-content:center;padding:22px" onclick="if(event.target===this)wtimClose()">
     <div style="background:#fff;border-radius:16px;width:min(680px,100%);max-height:92vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.35)">
       <div style="background:linear-gradient(135deg,var(--navy),var(--blue));color:#fff;padding:14px 20px;display:flex;justify-content:space-between;align-items:center">
@@ -4487,7 +4487,7 @@ function reportDocShell(title, sub, r, posTitle, completedAt, kpisHtml, sections
   <div class="kpis">${kpisHtml}</div>
   ${sectionsHtml}
   <div class="anwrap"><h2>${L.analysis}</h2><div class="analysis">${analysisHtml}</div></div>
-  <div class="foot">${footNote}</div>
+  ${footNote?`<div class="foot">${footNote}</div>`:''}
   </body></html>`;
 }
 function reportOpenWindow(doc){
@@ -4528,9 +4528,7 @@ function wtimDownload(i, lang){
   const sections=`${wtimOverallHtml(res,lang)}${cogItems.length?`<h2>${en?'Cognitive Reasoning':'Razonamiento cognitivo'}</h2>${bar(cogItemsLabeled)}`:''}
     ${persItems.length?`<h2>${en?'Personality (Big Five)':'Personalidad (Big Five)'}</h2>${bar(persItemsLabeled)}`:''}
     ${sjtItems.length?`<h2>${en?'Situational Judgment by competency':'Juicio situacional por competencia'}</h2>${bar(sjtItemsLabeled)}`:''}`;
-  const footNote = en
-    ? 'Wexpand Talent Intelligence Method™ (WTIM™) — pilot-phase content, probabilistic language. This is an input to support the recruiter\'s and client\'s decision; it never replaces human judgment nor automatically filters candidates.'
-    : 'Wexpand Talent Intelligence Method™ (WTIM™) — contenido en fase piloto, lenguaje probabilístico. Es un insumo para apoyar la decisión del reclutador y del cliente; nunca sustituye el juicio humano ni filtra candidatos automáticamente.';
+  const footNote = '';
   const doc=reportDocShell('WTIM™', en?'WEXPAND TALENT INTELLIGENCE METHOD':'WEXPAND TALENT INTELLIGENCE METHOD', r, posTitle, res.session.completed_at, kpis, sections, wtimAnalysisHtml(res.scores, lang),
     footNote, lang);
   reportOpenWindow(doc);
@@ -4649,7 +4647,7 @@ function techDownload(i){
   const kpis=`${tech?`<div class="kpi"><b>${tech.standardized}%</b><span>Technical</span></div>`:''}${wsItems.length?`<div class="kpi"><b>${wsItems.length}</b><span>Work Sample(s)</span></div>`:''}`;
   const sections=`${techItems.length?`<h2>Technical questions</h2>${bar(techItems)}`:''}${wsItems.length?`<h2>Work Sample</h2>${wsHtml}`:''}`;
   const doc=reportDocShell('Technical Assessment','EXPERTISE VERIFICATION', r, posTitle, res.session.completed_at, kpis, sections, techAnalysisHtml(res.scores, res.session.pass_pct),
-    'Technical Assessment — different from WTIM™ (psychometrics). Verifies concrete expertise for the role. AI-graded Work Samples remain flagged for recruiter review.', 'en');
+    '', 'en');
   reportOpenWindow(doc);
 }
 
