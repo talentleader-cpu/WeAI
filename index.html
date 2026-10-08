@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-08d -->
+<!-- build 2026-10-08e -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2727,7 +2727,7 @@ async function renderJobDesc(){
       <select id="jdPos" class="fsel" style="width:100%;max-width:560px" onchange="jdSelect(this.value)"><option value="">Loading…</option></select>
       <div id="jdForm" style="display:none;margin-top:8px">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-          <div><label style="${JD_LBL}">Location</label><input id="jdLoc" style="${JD_FLD}" placeholder="City, State / Remote"></div>
+          <div><label style="${JD_LBL}">Location</label><input id="jdLoc" style="${JD_FLD}" placeholder="City (e.g. Guadalajara) / Remote" list="cityDL">${cityDL()}</div>
           <div><label style="${JD_LBL}">Work mode</label><select id="jdMod" style="${JD_FLD}"><option value="">—</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></div>
           <div><label style="${JD_LBL}">Schedule</label><input id="jdSch" style="${JD_FLD}" placeholder="E.g. 9:00–18:00 (CST)"></div>
           <div><label style="${JD_LBL}">Work days</label><input id="jdDays" style="${JD_FLD}" placeholder="E.g. Monday to Friday"></div>
@@ -3261,6 +3261,8 @@ const ENG_OPTS=[['','Any English level'],['Advanced','Advanced (C1–C2)'],['Upp
 const ENG_BUCKETS=[{t:'Advanced (C1–C2)',term:'Advanced'},{t:'Upper-Int (B2)',term:'Upper'},{t:'Intermediate (B1)',term:'Interm'},{t:'Basic (A1–A2)',term:'Basic'},{t:'Native / Bilingual',term:'Native'}];
 // 32 estados de México
 const MX_STATES=['Aguascalientes','Baja California','Baja California Sur','Campeche','Chiapas','Chihuahua','Ciudad de México','Coahuila','Colima','Durango','Estado de México','Guanajuato','Guerrero','Hidalgo','Jalisco','Michoacán','Morelos','Nayarit','Nuevo León','Oaxaca','Puebla','Querétaro','Quintana Roo','San Luis Potosí','Sinaloa','Sonora','Tabasco','Tamaulipas','Tlaxcala','Veracruz','Yucatán','Zacatecas'];
+const MX_CITIES=['Remote','Guadalajara','Zapopan','Ciudad de México','Monterrey','Querétaro','Puebla','Tijuana','León','Mérida','Cancún','Aguascalientes','Chihuahua','San Luis Potosí','Toluca','Saltillo','Hermosillo','Culiacán','Morelia','Veracruz'];
+function cityDL(){return '<datalist id="cityDL">'+MX_CITIES.map(c=>'<option value="'+c+'">').join('')+'</datalist>';}
 // Fragmentos ASCII (acento-flexibles) + alias por estado para el ilike de location
 const STATE_MATCH={
   'Baja California Sur':['California Sur','B.C.S','BCS'],
@@ -5706,7 +5708,7 @@ async function openNewJob(){
       <div><label>Contract</label><select id="jContract"><option value="">—</option><option value="full_time">Full time</option><option value="part_time">Part time</option><option value="contractor">Contractor</option><option value="temporary">Temporary</option><option value="internship">Internship</option></select></div>
     </div>
     <label>Location</label>
-    <select id="jLoc"><option value="">— Select —</option><option>Remote</option><option>Aguascalientes</option><option>Baja California</option><option>Baja California Sur</option><option>Campeche</option><option>Chiapas</option><option>Chihuahua</option><option>Ciudad de México</option><option>Coahuila</option><option>Colima</option><option>Durango</option><option>Estado de México</option><option>Guanajuato</option><option>Guerrero</option><option>Hidalgo</option><option>Jalisco</option><option>Michoacán</option><option>Morelos</option><option>Nayarit</option><option>Nuevo León</option><option>Oaxaca</option><option>Puebla</option><option>Querétaro</option><option>Quintana Roo</option><option>San Luis Potosí</option><option>Sinaloa</option><option>Sonora</option><option>Tabasco</option><option>Tamaulipas</option><option>Tlaxcala</option><option>Veracruz</option><option>Yucatán</option><option>Zacatecas</option></select>
+    <input id="jLoc" list="cityDL" placeholder="City (e.g. Guadalajara) / Remote" autocomplete="off">${cityDL()}
     <label>Wexpand Solution</label>
     <select id="jSol"><option value="">— Select —</option><option>360 Management</option><option>Recruitment</option><option>PEO</option><option>Soft Landing</option></select>
     <label>Job description</label><textarea id="jJD" rows="3" placeholder="Role summary, requirements…"></textarea>
@@ -8095,7 +8097,7 @@ function openEditJob(){
       <div><label>Contract</label><select id="eContract">${contracts.map(c=>opt(c[0],p.contract,c[1])).join('')}</select></div>
     </div>
     <div class="frow">
-      <div><label>Location</label><select id="eLoc"><option value="">— Select —</option>${['Remote',...MX_STATES].map(s=>opt(s,p.location)).join('')}</select></div>
+      <div><label>Location</label><input id="eLoc" list="cityDL" placeholder="City (e.g. Guadalajara) / Remote" value="${esc(p.location||'')}">${cityDL()}</div>
       <div><label>Work mode</label><select id="eMod">${mods.map(m=>opt(m[0],p.location_type,m[1])).join('')}</select></div>
     </div>
     <div class="frow">
