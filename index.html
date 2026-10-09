@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-09a -->
+<!-- build 2026-10-09b -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -5351,6 +5351,28 @@ function pwStatusPillSelect(p){
     ${opts.map(o=>`<option value="${esc(o[0])}" ${cur===o[0]?'selected':''}>${esc(o[1])}</option>`).join('')}
   </select>`;
 }
+async function pwAskNotifyCandidates(positionId, status, title){
+  const verb=status==='on_hold'?'paused':'canceled';
+  let n=null, over=false, cap=0;
+  try{
+    const {data,error}=await sb.functions.invoke('send-stage-email',{body:{position_id:positionId,position_status:status,dry_run:true}});
+    if(!error && data && data.ok){ n=data.recipients; over=!!data.over_cap; cap=data.cap; }
+  }catch(_){}
+  if(n===null){ toast('Could not count candidates to notify — nothing was sent.'); return; }
+  if(n===0){ toast('No active candidates to notify for this position.'); return; }
+  if(over){ showModal('Too many candidates to notify at once', `<p><b>${n}</b> active candidates would receive the email, and the limit per send is <b>${cap}</b>. Nothing was sent.</p>`); return; }
+  showModal('Notify candidates?', `<p>The position <b>${esc(title||'')}</b> is now <b>${verb}</b>. Do you want to send a warm, empathetic email to the <b>${n}</b> candidates still active in it (not rejected or hired)?</p>
+    <p class="muted" style="font-size:12px;margin-top:8px">The email also includes the invitation to the Wexpand WhatsApp community. Nothing is sent unless you confirm.</p>`,
+    'Send to '+n+' candidates', async ()=>{
+      closeModal(); toast('Sending…');
+      try{
+        const {data,error}=await sb.functions.invoke('send-stage-email',{body:{position_id:positionId,position_status:status}});
+        if(error) throw error;
+        if(data && data.ok){ toast('✓ Sent to '+data.sent+' candidates'+(data.failed?(' · '+data.failed+' failed'):'')); return; }
+        toast('Could not send: '+((data&&data.message)||'unknown error'));
+      }catch(e){ toast('Could not send: '+(e.message||e)); }
+    });
+}
 async function pwChangeStatus(sel){
   const prev=pwPos.status||'open';
   const next=sel.value;
@@ -5361,6 +5383,7 @@ async function pwChangeStatus(sel){
     pwPos.status=next;
     sel.value=next; sel.className='jstat '+next;
     toast('Status: '+(PW_STATUS_OPTS.find(o=>o[0]===next)||[next,next])[1]);
+    if(next==='on_hold' || next==='canceled'){ pwAskNotifyCandidates(pwPos.id, next, pwPos.title); }
   };
   if(next==='on_hold' || next==='canceled'){
     sel.value=prev; // revierte visualmente hasta que se confirme
@@ -7627,7 +7650,7 @@ async function moveCandStage(appId, stage){
   // rapido de la tarjeta, o el panel de vista previa) ofrece mandar el correo
   // con el link de agenda del reclutador dueno de la posicion -- siempre el
   // link correcto, porque send-stage-email lo lee de profiles.calendar_url.
-  if(stage==='wexpand_interview_1'){ pwAskAutomationEmail(appId, stage); }
+  if(stage==='wexpand_interview_1' || stage==='rejected_wexpand' || stage==='rejected_client'){ pwAskAutomationEmail(appId, stage); }
 }
 
 // ===== CV preview panel (pipeline board): Next/Previous + move-to-stage =====
@@ -8056,7 +8079,7 @@ function pwPreviewMove(stage){
 }
 function pwAskAutomationEmail(appId, stage){
   showModal('Send automation email?', `<p>Do you want to send the candidate the automatic email for the <b>${esc(pipeInfo(stage).t)}</b> stage?</p>
-    <p class="muted" style="font-size:12px">Only some stages have an email defined today (right now: Wexpand 1st interview — sends the recruiter's calendar link). Other stages will just show a note that there's nothing to send yet.</p>`,
+    <p class="muted" style="font-size:12px">${stage==='wexpand_interview_1'?"Sends the recruiter's calendar link so the candidate can book the interview.":"Sends a warm, empathetic message letting the candidate know the outcome, plus the invitation to the Wexpand WhatsApp community. Nothing is sent unless you confirm."}</p>`,
     'Send email', async ()=>{
       closeModal();
       toast('Sending…');
