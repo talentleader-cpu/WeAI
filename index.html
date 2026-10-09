@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<!-- build 2026-10-08f -->
+<!-- build 2026-10-09a -->
 <title>WeAI</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -5772,7 +5772,7 @@ async function openJob(id, from){
 async function pwLoadApps(){
   const {data}=await sb.from('applications')
     .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,client_visible,wtim_pdf_url,assessment_pdf_url,matrix_pdf_url,video_interview_url, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url,comments,source,tags,import_data)')
-    .eq('position_id',pwPos.id).order('created_at',{ascending:true});
+    .eq('position_id',pwPos.id).order('created_at',{ascending:false});
   pwApps=data||[];
   pwVideoEmails=new Set();
   try{
