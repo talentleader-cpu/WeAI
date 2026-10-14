@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Background check | Wexpand</title>
+<style>
+:root{--blue:#0653A1;--navy:#0f2233;--ink:#33414d;--mut:#6b7a87;--line:#e1e9f0;--bg:#f3f7fb;--ok:#1c7a57;--err:#b23b22}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+.wrap{max-width:640px;margin:0 auto;padding:20px 16px 60px}
+.logo{display:block;margin:6px auto 14px;width:150px;height:auto}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:22px;margin-bottom:16px}
+h1{font-size:21px;line-height:1.3;color:var(--navy);margin:0 0 6px;text-wrap:balance}
+h2{font-size:16px;color:var(--navy);margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 4px;font-size:14px}
+.step{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:var(--blue);color:#fff;font-weight:700;font-size:13px;margin-right:8px}
+label{display:block;font-weight:600;font-size:13.5px;color:var(--navy);margin:14px 0 5px}
+input[type=text],textarea{width:100%;padding:11px 12px;border:1px solid #c9d6e1;border-radius:9px;font:inherit;color:var(--navy);background:#fff}
+input[type=text]:focus,textarea:focus{outline:2px solid #9cc1ea;border-color:var(--blue)}
+.letter{background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;font-size:14px;line-height:1.65;text-align:justify;margin-top:12px}
+.letter .t{text-align:center;font-weight:700;color:var(--navy);margin:0 0 10px}
+.letter p{margin:0 0 10px}.fill{border-bottom:1.5px solid var(--blue);color:var(--navy);font-weight:700;padding:0 4px;word-break:break-word}
+.sig{border:1.5px dashed #9fb4c6;border-radius:10px;background:#fff;touch-action:none;display:block;width:100%;height:170px;cursor:crosshair}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:6px}
+.lnk{background:none;border:0;color:var(--blue);font:inherit;font-size:13px;cursor:pointer;padding:4px 0;text-decoration:underline}
+.chk{display:flex;gap:10px;align-items:flex-start;margin-top:14px;font-size:14px;color:var(--navy)}.chk input{width:20px;height:20px;margin-top:2px;flex:none}
+.file{border:1.5px dashed #9fb4c6;border-radius:10px;padding:12px 14px;background:#fbfdff}
+.file input{font:inherit;font-size:13.5px;width:100%}.file .ok{color:var(--ok);font-size:13px;margin-top:4px;display:none}
+.hint{font-size:13px;color:var(--mut);margin:4px 0 0}
+.info{background:#eef7f1;border:1px solid #cfe6d8;border-radius:10px;padding:11px 14px;font-size:13.5px;color:#215a3e;margin:10px 0}
+.map{display:inline-block;margin-top:8px;color:var(--blue);font-weight:600;font-size:13.5px}
+button.go{width:100%;padding:14px;border:0;border-radius:11px;background:var(--blue);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer}
+button.go:disabled{opacity:.55;cursor:wait}
+.err{display:none;background:#fdf0ed;border:1px solid #f2c4ba;color:var(--err);padding:11px 14px;border-radius:10px;margin:12px 0;font-size:14px}
+.done{text-align:center;padding:30px 20px}.done .big{font-size:42px;color:var(--ok)}
+.foot{text-align:center;color:#8a97a3;font-size:12px;margin-top:18px}
+</style></head><body><div class="wrap">
+<img class="logo" id="logo" alt="Wexpand" src="">
+<div id="loading" class="card">Cargando...</div>
+<div id="invalid" class="card" style="display:none"><h1>Enlace no válido</h1><p class="sub">Este enlace no existe o venció. Escríbenos respondiendo el correo que recibiste y te ayudamos.</p></div>
+<div id="done" class="card done" style="display:none"><div class="big">&#10003;</div><h1>¡Listo, gracias!</h1><p class="sub" id="doneMsg">Recibimos tu autorización y tus documentos. Tu reclutador ya fue notificado y se pondrá en contacto contigo para coordinar tu examen médico.</p></div>
+<form id="form" style="display:none" autocomplete="off">
+ <div class="card"><h1 id="hello">Siguiente paso</h1><p class="sub">Para continuar en el proceso de selección para el puesto de <b id="pos"></b>, completa estos 3 pasos. Te toma unos 5 minutos.</p></div>
+
+ <div class="card"><h2><span class="step">1</span>Autorización de background check</h2>
+  <p class="sub">Lee la carta, escribe tus datos y firma.</p>
+  <label for="name">Nombre completo</label><input id="name" type="text" placeholder="Como aparece en tu identificación" autocomplete="name">
+  <label for="curp">CURP</label><input id="curp" type="text" maxlength="18" placeholder="18 caracteres" style="text-transform:uppercase" autocapitalize="characters" spellcheck="false">
+  <div class="letter"><p style="text-align:right">Fecha: <span class="fill" id="fdate"></span></p>
+   <p class="t">Carta de autorización para revisión de antecedentes</p>
+   <p>A quien corresponda.</p>
+   <p>Yo <span class="fill" id="lname">________________</span> con Clave Única de Registro Público (CURP) <span class="fill" id="lcurp">________________</span> por medio de la presente, doy mi consentimiento para que DCM ADMINISTRATIVE PARTNER SC realice un chequeo de antecedentes como parte del proceso de selección para el puesto de <b id="lpos"></b>.</p>
+   <p>Entiendo que este chequeo de antecedentes puede incluir, pero no limitarse a, verificación de empleo, verificación de referencias personales, verificación de historial educativo, historial crediticio y revisión de antecedentes penales.</p>
+   <p>Autorizo a DCM ADMINISTRATIVE PARTNER SC y a cualquier agencia de investigación contratada por ellos a recopilar y revisar la información necesaria para llevar a cabo este chequeo de antecedentes.</p>
+   <p>Entiendo que la información obtenida será utilizada únicamente con el propósito de evaluar mi idoneidad para el puesto de trabajo y será tratada de manera confidencial.</p>
+   <p style="text-align:center;margin-bottom:0">Atentamente,</p></div>
+  <label>Firma (dibuja con tu dedo o mouse)</label>
+  <canvas id="sig" class="sig"></canvas>
+  <div class="row"><span class="hint" id="sigState">Aún sin firma</span><button type="button" class="lnk" id="clr">Borrar firma</button></div>
+  <div class="chk"><input type="checkbox" id="consent"><label for="consent" style="margin:0;font-weight:400">Acepto y autorizo la revisión de antecedentes descrita en esta carta. Entiendo que mi firma electrónica, nombre, CURP, fecha y hora quedan registrados como evidencia de mi consentimiento.</label></div>
+ </div>
+
+ <div class="card"><h2><span class="step">2</span>Tus documentos</h2>
+  <p class="sub">Adjunta una foto clara o PDF (máx. 6 MB cada uno).</p>
+  <label>INE (identificación oficial)</label><div class="file"><input id="ine" type="file" accept="image/*,application/pdf"><div class="ok" id="ineOk"></div></div>
+  <label>CURP (documento oficial)</label><div class="file"><input id="curpdoc" type="file" accept="image/*,application/pdf"><div class="ok" id="curpOk"></div></div>
+ </div>
+
+ <div class="card"><h2><span class="step">3</span>Examen médico en Salud Digna</h2>
+  <div class="info"><b>No necesitas ir en ayunas.</b> Horario de atención: <b>6:00 a.m. a 12:00 p.m.</b></div>
+  <p class="sub">Busca la sucursal de Salud Digna más cercana a tu casa en Google Maps, cópiala y pégala aquí (enlace o dirección).</p>
+  <a class="map" target="_blank" rel="noopener" href="https://www.google.com/maps/search/Salud+Digna">Abrir Google Maps: Salud Digna &rarr;</a>
+  <label for="clinic">Sucursal elegida</label><textarea id="clinic" rows="3" placeholder="Ej. Salud Digna Insurgentes, Av. Insurgentes Sur 123, CDMX, o pega el enlace de Google Maps"></textarea>
+ </div>
+
+ <div class="err" id="err"></div>
+ <button class="go" id="send" type="submit">Firmar y enviar</button>
+ <p class="foot">Tus datos se usan solo para este proceso de selección y se tratan de forma confidencial.<br>&copy; Wexpand</p>
+</form>
+</div>
+<script>
+(function(){
+var API="https://eabnfggpviymtrhvnimn.supabase.co/functions/v1/bgc-portal";
+var T=(new URLSearchParams(location.search)).get("t")||"";
+var $=function(i){return document.getElementById(i)};
+$("logo").src=API+"?logo=1";
+var months=["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+var d=new Date();$("fdate").textContent=d.getDate()+" de "+months[d.getMonth()]+" de "+d.getFullYear();
+function show(id){["loading","invalid","done","form"].forEach(function(x){$(x).style.display=(x===id)?"block":"none"})}
+if(!T){show("invalid")}else{
+ fetch(API+"?t="+encodeURIComponent(T)).then(function(r){return r.json()}).then(function(j){
+  if(!j.ok){show("invalid");return}
+  if(j.completed){show("done");$("doneMsg").textContent="Ya recibimos tu autorización y tus documentos. Tu reclutador se pondrá en contacto contigo.";return}
+  $("hello").textContent="Hola"+(j.first_name?" "+j.first_name:"")+", seguimos adelante";
+  $("pos").textContent=j.position;$("lpos").textContent=j.position;
+  if(j.candidate_name&&!$("name").value){$("name").value=j.candidate_name}
+  $("lname").textContent=$("name").value||"________________";
+  show("form");sizeCanvas();
+ }).catch(function(){show("invalid")});
+}
+$("name").addEventListener("input",function(){$("lname").textContent=this.value.trim()||"________________"});
+$("curp").addEventListener("input",function(){this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,"");$("lcurp").textContent=this.value||"________________"});
+var cv=$("sig"),ctx=cv.getContext("2d"),drawing=false,hasSig=false;
+function sizeCanvas(){var r=cv.getBoundingClientRect();if(!r.width)return;var s=window.devicePixelRatio||1;cv.width=Math.round(r.width*s);cv.height=Math.round(r.height*s);ctx.setTransform(s,0,0,s,0,0);ctx.lineWidth=2.4;ctx.lineCap="round";ctx.lineJoin="round";ctx.strokeStyle="#0f2233";hasSig=false;$("sigState").textContent="Aún sin firma"}
+function pos(e){var r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top}}
+cv.addEventListener("pointerdown",function(e){drawing=true;cv.setPointerCapture(e.pointerId);var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+.1,p.y+.1);ctx.stroke();hasSig=true;$("sigState").textContent="Firma capturada";e.preventDefault()});
+cv.addEventListener("pointermove",function(e){if(!drawing)return;var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();e.preventDefault()});
+["pointerup","pointercancel","pointerleave"].forEach(function(n){cv.addEventListener(n,function(){drawing=false})});
+$("clr").addEventListener("click",sizeCanvas);
+function readFile(inp){return new Promise(function(res,rej){var f=inp.files[0];if(!f){rej("Falta adjuntar el archivo.");return}
+ if(f.size>25*1024*1024){rej("El archivo es demasiado grande.");return}
+ if(f.type==="application/pdf"){if(f.size>6*1024*1024){rej("El PDF pesa más de 6 MB.");return}var fr=new FileReader();fr.onload=function(){res(fr.result)};fr.onerror=function(){rej("No se pudo leer el archivo.")};fr.readAsDataURL(f);return}
+ if(!/^image\//.test(f.type)){rej("Usa PDF, JPG o PNG.");return}
+ var url=URL.createObjectURL(f),im=new Image();im.onload=function(){var m=1800,s=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);var x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(url);res(c.toDataURL("image/jpeg",.85))};
+ im.onerror=function(){rej("No se pudo leer la imagen (prueba con JPG o PDF).")};im.src=url})}
+[["ine","ineOk"],["curpdoc","curpOk"]].forEach(function(p){$(p[0]).addEventListener("change",function(){var f=this.files[0];var o=$(p[1]);if(f){o.style.display="block";o.textContent="✓ "+f.name}else{o.style.display="none"}})});
+function err(m){var e=$("err");e.textContent=m;e.style.display="block";e.scrollIntoView({behavior:"smooth",block:"center"})}
+$("form").addEventListener("submit",function(ev){ev.preventDefault();$("err").style.display="none";
+ var name=$("name").value.trim(),curp=$("curp").value.trim().toUpperCase(),clinic=$("clinic").value.trim();
+ if(name.length<5)return err("Escribe tu nombre completo.");
+ if(!/^[A-Z]{4}\d{6}[HMX][A-Z]{2}[B-DF-HJ-NP-TV-Z]{3}[A-Z0-9]\d$/.test(curp))return err("Revisa tu CURP: debe tener 18 caracteres con el formato oficial.");
+ if(!hasSig)return err("Dibuja tu firma en el recuadro.");
+ if(!$("consent").checked)return err("Marca la casilla de autorización.");
+ if(!$("ine").files[0])return err("Adjunta tu INE.");
+ if(!$("curpdoc").files[0])return err("Adjunta tu CURP.");
+ if(clinic.length<5)return err("Pega la sucursal de Salud Digna que elegiste.");
+ var btn=$("send");btn.disabled=true;btn.textContent="Enviando...";
+ Promise.all([readFile($("ine")),readFile($("curpdoc"))]).then(function(f){
+  return fetch(API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({t:T,full_name:name,curp:curp,consent:true,signature:cv.toDataURL("image/png"),clinic_text:clinic,ine:{b64:f[0]},curp_doc:{b64:f[1]}})}).then(function(r){return r.json()})
+ }).then(function(j){if(j&&j.ok){show("done");window.scrollTo(0,0)}else{err((j&&j.message)||"No se pudo enviar. Intenta de nuevo.");btn.disabled=false;btn.textContent="Firmar y enviar"}})
+ .catch(function(m){err(typeof m==="string"?m:"Error de conexión. Intenta de nuevo.");btn.disabled=false;btn.textContent="Firmar y enviar"});
+});
+window.addEventListener("resize",function(){if(!hasSig&&$("form").style.display==="block")sizeCanvas()});
+})();
+</script></body></html>
