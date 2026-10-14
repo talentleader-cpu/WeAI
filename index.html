@@ -5779,7 +5779,7 @@ async function autoProvisionWtim(posId){
 }
 
 // ===== POSITION WORKSPACE (full page) =====
-let pwPos=null, pwApps=[], pwTeam=[], pwTab='candidates', pwFrom='jobs', pwVideoEmails=new Set(), pwScores={};
+let pwPos=null, pwApps=[], pwTeam=[], pwTab='candidates', pwFrom='jobs', pwVideoEmails=new Set(), pwScores={}, pwMatch={};
 async function openJob(id, from){
   pwFrom=from||'jobs'; pwTab='candidates';
   document.getElementById('view').innerHTML='<div class="content"><p class="muted">Loading position…</p></div>';
@@ -5806,7 +5806,15 @@ async function pwLoadApps(){
 }
 // ===== Score predictivo (candidate_position_features) =====
 async function pwLoadScores(){
-  pwScores={};
+  pwScores={}; pwMatch={};
+  try{
+    const _ids=(pwApps||[]).map(a=>a.id).filter(Boolean); const _byApp={};
+    for(let _i=0;_i<_ids.length;_i+=60){
+      const {data:_ms}=await sb.from('application_match').select('application_id,match_pct,summary,computed_at').in('application_id',_ids.slice(_i,_i+60)).order('computed_at',{ascending:true});
+      (_ms||[]).forEach(m=>{ _byApp[m.application_id]=m; });
+    }
+    (pwApps||[]).forEach(a=>{ const m=_byApp[a.id]; if(m && m.match_pct!=null && a.candidates && a.candidates.id) pwMatch[a.candidates.id]=m; });
+  }catch(_){}
   try{
     const {data}=await sb.from('candidate_position_features')
       .select('candidate_id,expert_score,model_score,model_version,has_wtim,has_assessment,has_evaluation_matrix')
@@ -5878,7 +5886,13 @@ async function pwMatchAdd(candId, btn){
   if(wrap){ const actionSlot=wrap.querySelector('button'); if(actionSlot){ actionSlot.outerHTML='<span class="pm">Added ✓</span>'; } }
   toast('Added to pipeline');
 }
-function pwScoreBadge(candidateId){
+function pwMatchChip(candidateId){
+  const m=pwMatch[candidateId]; if(!m || m.match_pct==null) return '';
+  const mv=Math.round(Number(m.match_pct)); const mc=mv>=80?'#1c7a57':mv>=50?'#b3811f':'#b23b22';
+  return `<span class="chip" title="CV vs job description match. ${esc(m.summary||'')}" style="background:${mc}1a;color:${mc};font-weight:800;font-size:10.5px;margin-left:4px">${mv}% match</span>`;
+}
+function pwScoreBadge(candidateId){ return pwScoreBadgeBase(candidateId)+pwMatchChip(candidateId); }
+function pwScoreBadgeBase(candidateId){
   const s=pwScores[candidateId]; if(!s) return '';
   const val = s.model_score!=null ? s.model_score : s.expert_score;
   if(val==null) return '';
