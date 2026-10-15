@@ -774,6 +774,7 @@ html body #login{background:radial-gradient(1200px 600px at 20% -10%,#0B57A8 0%,
           <div class="crumb" id="crumb">Recruiting</div>
           <h2 id="pageTitle">Candidates</h2>
         </div>
+        <button class="btn-primary" style="margin-left:auto" onclick="liOpen()">+ Add from LinkedIn</button>
       </div>
       <div id="subnav"></div>
       <div id="view"></div>
@@ -4092,6 +4093,100 @@ async function renderInternalDocs(r){
     row('','Interview transcript','Upload the Teams / Fireflies transcript (.txt, .vtt, .srt, .docx) or paste it', dtN>0, `dtView('${r.id}')`,
       `<label class="btn-ghost" style="padding:5px 10px;font-size:12px;cursor:pointer;margin:0">Upload<input type="file" accept=".txt,.vtt,.srt,.docx" style="display:none" onchange="dtUploadFile('${r.id}', this)"></label><button class="btn-ghost" style="padding:5px 10px;font-size:12px" onclick="dtPasteOpen('${r.id}')">Paste</button>`);
 }
+// ===== Add candidate from LinkedIn / Indeed (+ Chrome extension download) =====
+let liState={tab:'paste',parsed:null,existing:null,positions:null};
+function liOpen(){
+  liState={tab:'paste',parsed:null,existing:null,positions:null};
+  showModal('Add a candidate from LinkedIn or Indeed','<div id="liBody"></div>',null);
+  liRender();
+}
+function liTabs(){
+  const t=(k,l)=>`<button class="btn-ghost" style="padding:6px 12px;font-size:13px;${liState.tab===k?'background:var(--navy);color:#fff;border-color:var(--navy)':''}" onclick="liState.tab='${k}';liRender()">${l}</button>`;
+  return `<div style="display:flex;gap:8px;margin-bottom:14px">${t('paste','Paste a profile')}${t('ext','Chrome extension (1 click)')}</div>`;
+}
+function liRender(){
+  const b=document.getElementById('liBody'); if(!b) return;
+  if(liState.tab==='ext'){
+    b.innerHTML=liTabs()+`<div style="font-size:13.5px;line-height:1.6;max-width:560px">
+      <p style="margin-top:0">The <b>WeAI Quick Add</b> extension puts a panel on LinkedIn and Indeed: open a profile, press the button, review what the AI filled in and save. It also sends the person to a position or an industry hot list.</p>
+      <p><button class="btn-primary" onclick="liDownloadExt()">Download extension (.zip)</button></p>
+      <ol style="padding-left:18px;margin:0">
+        <li>Unzip the file. You get a folder called <b>weai-quickadd-extension</b>; keep it somewhere permanent (Documents, for example) and do not delete it.</li>
+        <li>In Chrome open <b>chrome://extensions</b> and turn on <b>Developer mode</b> (top right).</li>
+        <li>Click <b>Load unpacked</b> and choose the unzipped folder.</li>
+        <li>Click the puzzle icon in Chrome and pin <b>WeAI Quick Add</b>.</li>
+        <li>Open the extension and sign in with your WeAI email and password.</li>
+        <li>Go to a LinkedIn or Indeed profile and use the button that appears on the page.</li>
+      </ol></div>`;
+    return;
+  }
+  const p=liState.parsed;
+  if(!p){
+    b.innerHTML=liTabs()+`<div style="max-width:620px">
+      <p class="muted" style="margin-top:0;font-size:13px">On the LinkedIn or Indeed profile press <b>Ctrl+A</b> then <b>Ctrl+C</b> (Cmd on Mac) to copy the page, and paste it here. The AI reads it and fills in the profile; you review it before anything is saved.</p>
+      <label style="font-size:12px;font-weight:600">Profile link</label>
+      <input id="liUrl" type="text" placeholder="linkedin.com/in/..." style="width:100%;box-sizing:border-box;margin:4px 0 10px">
+      <label style="font-size:12px;font-weight:600">Profile text</label>
+      <textarea id="liText" placeholder="Paste the full profile text here" style="width:100%;box-sizing:border-box;min-height:180px;margin-top:4px"></textarea>
+      <div id="liMsg" style="font-size:12.5px;color:#b42318;min-height:18px;margin:6px 0"></div>
+      <button class="btn-primary" id="liAnalyze" onclick="liAnalyze()">Analyze with AI</button></div>`;
+    return;
+  }
+  const v=(k)=>esc(p[k]==null?'':String(p[k]));
+  const ex=liState.existing;
+  const posOpts=(liState.positions||[]).map(x=>`<option value="${x.id}">${esc(x.title)}</option>`).join('');
+  b.innerHTML=liTabs()+`<div style="max-width:620px">
+    ${ex?`<div style="background:#fff7e6;border:1px solid #f5d28a;border-radius:10px;padding:9px 12px;font-size:12.5px;margin-bottom:12px">This person already exists in WeAI (<b>${esc(ex.full_name||'')}</b>). Saving will update that record instead of creating a new one.</div>`:''}
+    <div class="frow"><div><label style="font-size:12px;font-weight:600">First name</label><input id="lf_first" value="${v('first_name')}" style="width:100%;box-sizing:border-box"></div><div><label style="font-size:12px;font-weight:600">Last name</label><input id="lf_last" value="${v('last_name')}" style="width:100%;box-sizing:border-box"></div></div>
+    <div class="frow" style="margin-top:8px"><div><label style="font-size:12px;font-weight:600">Email</label><input id="lf_email" value="${v('email')}" style="width:100%;box-sizing:border-box"></div><div><label style="font-size:12px;font-weight:600">Phone</label><input id="lf_phone" value="${v('phone')}" style="width:100%;box-sizing:border-box"></div></div>
+    <div class="frow" style="margin-top:8px"><div><label style="font-size:12px;font-weight:600">Location</label><input id="lf_loc" value="${v('location')}" style="width:100%;box-sizing:border-box"></div><div><label style="font-size:12px;font-weight:600">English level</label><input id="lf_eng" value="${v('english_level')}" style="width:100%;box-sizing:border-box"></div><div><label style="font-size:12px;font-weight:600">Years of experience</label><input id="lf_exp" type="number" value="${v('experience_years')}" style="width:100%;box-sizing:border-box"></div></div>
+    <label style="font-size:12px;font-weight:600;display:block;margin-top:8px">Skills (comma separated)</label>
+    <input id="lf_skills" value="${esc((Array.isArray(p.skills)?p.skills:[]).join(', '))}" style="width:100%;box-sizing:border-box">
+    <label style="font-size:12px;font-weight:600;display:block;margin-top:8px">Notes</label>
+    <textarea id="lf_notes" style="width:100%;box-sizing:border-box;min-height:70px">${esc([p.headline,p.current_company&&('Current company: '+p.current_company),p.summary].filter(Boolean).join('\n'))}</textarea>
+    <label style="font-size:12px;font-weight:600;display:block;margin-top:8px">After saving</label>
+    <select id="lf_dest" onchange="document.getElementById('lf_pos').style.display=this.value==='position'?'block':'none'" style="width:100%;box-sizing:border-box">
+      <option value="none">Only save the candidate</option><option value="position">Add to a position</option><option value="hotlist_auto">Add to an industry hot list (AI picks)</option></select>
+    <select id="lf_pos" style="display:none;width:100%;box-sizing:border-box;margin-top:6px">${posOpts}</select>
+    <div id="liMsg" style="font-size:12.5px;color:#b42318;min-height:18px;margin:8px 0"></div>
+    <div style="display:flex;gap:8px"><button class="btn-ghost" onclick="liState.parsed=null;liRender()">Back</button><button class="btn-primary" id="liSave" onclick="liSave()">Save candidate</button></div></div>`;
+}
+function liPlatform(url){ return /indeed\./i.test(url||'')?'indeed':'linkedin'; }
+async function liAnalyze(){
+  const url=(document.getElementById('liUrl').value||'').trim();
+  const text=(document.getElementById('liText').value||'').trim();
+  const msg=document.getElementById('liMsg'), btn=document.getElementById('liAnalyze');
+  if(text.length<30){ msg.textContent='Paste the profile text first.'; return; }
+  btn.disabled=true; btn.textContent='Analyzing…'; msg.textContent='';
+  try{
+    const {data,error}=await sb.functions.invoke('sourced-add-candidate',{body:{mode:'parse',raw_text:text,source_url:url,source_platform:liPlatform(url)}});
+    if(error) throw error; if(!data||!data.ok) throw new Error((data&&data.message)||'The AI could not read this profile');
+    liState.parsed=data.parsed||{}; liState.existing=data.existing||null; liState.url=url;
+    if(!liState.positions){ const r=await sb.from('positions').select('id,title').eq('status','open').order('title'); liState.positions=r.data||[]; }
+    liRender();
+  }catch(e){ msg.textContent=String(e.message||e); btn.disabled=false; btn.textContent='Analyze with AI'; }
+}
+async function liSave(){
+  const g=id=>document.getElementById(id).value.trim();
+  const msg=document.getElementById('liMsg'), btn=document.getElementById('liSave');
+  if(!g('lf_first')&&!g('lf_last')){ msg.textContent='Add at least a name.'; return; }
+  const dest=g('lf_dest'); const destination=dest==='position'?{type:'position',position_id:g('lf_pos')}:{type:dest};
+  if(dest==='position'&&!destination.position_id){ msg.textContent='Choose a position.'; return; }
+  btn.disabled=true; btn.textContent='Saving…'; msg.textContent='';
+  try{
+    const fields={first_name:g('lf_first'),last_name:g('lf_last'),email:g('lf_email'),phone:g('lf_phone'),location:g('lf_loc'),english_level:g('lf_eng'),
+      experience_years:g('lf_exp'),skills:g('lf_skills').split(',').map(s=>s.trim()).filter(Boolean),comments:g('lf_notes'),headline:liState.parsed.headline||null};
+    const {data,error}=await sb.functions.invoke('sourced-add-candidate',{body:{mode:'save',source_url:liState.url||'',source_platform:liPlatform(liState.url),fields,destination}});
+    if(error) throw error; if(!data||!data.ok) throw new Error((data&&data.message)||'Could not save');
+    const d=data.destination_result; let extra='';
+    if(d){ extra=d.ok?(d.type==='position'?' · added to '+(d.position_title||'the position'):' · added to hot list '+(d.hotlist_name||'')):' · '+(d.message||'destination not applied'); }
+    closeModal(); toast((data.updated?'Candidate updated':'Candidate saved')+extra);
+  }catch(e){ msg.textContent=String(e.message||e); btn.disabled=false; btn.textContent='Save candidate'; }
+}
+function liDownloadExt(){
+  const a=document.createElement('a'); a.href='weai-quickadd-extension.zip'; a.download='weai-quickadd-extension.zip'; document.body.appendChild(a); a.click(); a.remove();
+}
+
 // ===== Deep interview transcripts (video stays in Drive) =====
 async function dtLoadMammoth(){
   if(window.mammoth) return window.mammoth;
