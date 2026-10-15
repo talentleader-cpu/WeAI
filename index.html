@@ -6284,17 +6284,33 @@ async function abLoad(){
     if(techRes.error) throw techRes.error;
     if(wtimRes.data&&wtimRes.data.ok===false) throw new Error(wtimRes.data.message||'error');
     if(techRes.data&&techRes.data.ok===false) throw new Error(techRes.data.message||'error');
+    let _techOn=true;
+    try{ const {data:_pr}=await sb.from('positions').select('technical_assessment_enabled').eq('id',pwPos.id).maybeSingle(); if(_pr&&_pr.technical_assessment_enabled===false) _techOn=false; }catch(_){}
     abState.wtim={bp:(wtimRes.data&&wtimRes.data.blueprint)||null, comps:(wtimRes.data&&wtimRes.data.components)||[]};
     abState.technical={bp:(techRes.data&&techRes.data.blueprint)||null, comps:(techRes.data&&techRes.data.components)||[]};
     wrap.innerHTML=`<div class="ab-wrap">
       <div class="ab-block">${abState.wtim.bp?abPaintHtml('wtim'):abEmptyHtml('wtim')}</div>
-      <div class="ab-block" style="border-bottom:none">${abState.technical.bp?abPaintHtml('technical'):abEmptyHtml('technical')}</div>
+      <div class="ab-block" style="border-bottom:none">${abTechSwitchHtml(_techOn)}${abState.technical.bp?abPaintHtml('technical'):abEmptyHtml('technical')}</div>
       <div id="aiGenWrap"></div>
     </div>`;
     aiGenLoad();
   }catch(e){
     wrap.innerHTML='<div class="muted" style="padding:18px">Could not load the Assessment.<br><span style="font-size:12px">'+esc(e.message||e)+'</span></div>';
   }
+}
+function abTechSwitchHtml(on){
+  return `<div class="ab-tsw" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:${on?'#f1f8f4':'#fdf1ee'};border:1px solid ${on?'#cfe6d8':'#f0c9c0'};border-radius:12px;padding:10px 14px;margin-bottom:14px">
+    <div style="flex:1;min-width:220px;font-size:13px;color:#33414d"><b style="color:${on?'#1c7a57':'#b23b22'}">Technical assessment sending: ${on?'ON':'OFF'}</b><br><span style="font-size:12px;color:var(--muted)">${on?'Candidates for this position receive the technical assessment in their emails and reminders.':'Paused: no technical assessment is sent for this position (welcome email, reminders or manual invites), and it is no longer required to move candidates on.'}</span></div>
+    <button class="btn-ghost${on?' danger':''}" onclick="abTechToggle(${on?'false':'true'})">${on?'Turn off':'Turn on'}</button>
+  </div>`;
+}
+async function abTechToggle(enable){
+  try{
+    const {error}=await sb.from('positions').update({technical_assessment_enabled:!!enable}).eq('id',pwPos.id);
+    if(error) throw error;
+    toast(enable?'Technical assessment sending turned on':'Technical assessment sending turned off');
+    abLoad();
+  }catch(e){ toast('Could not update: '+(e.message||e)); }
 }
 function abEmptyHtml(kind){
   if(kind==='wtim'){
