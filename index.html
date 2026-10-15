@@ -4077,11 +4077,78 @@ async function renderInternalDocs(r){
       ${extraBtn||''}
     </div>
   </div>`;
+  let dtDrive=null, dtN=0;
+  try{
+    const [d1,d2]=await Promise.all([
+      sb.from('deep_interview_drive_index').select('drive_view_url,video_file_name').eq('matched_candidate_id',r.id).limit(1),
+      sb.from('deep_interview_transcripts').select('id',{count:'exact',head:true}).eq('candidate_id',r.id)
+    ]);
+    dtDrive=(d1.data&&d1.data[0])||null; dtN=d2.count||0;
+  }catch(_){}
   box.innerHTML =
     row('','Psychometrics (Psicotest)','Historical report, migrated from RecruitCRM', !!r.legacy_psychometrics_url, `openInternalDoc('${esc(r.legacy_psychometrics_url||'')}')`) +
     row('','Evaluation Matrix','Migrated from RecruitCRM', !!r.evaluation_matrix_url, `openInternalDoc('${esc(r.evaluation_matrix_url||'')}')`) +
-    row('','Deep Interview','Upload it directly from here', !!r.deep_interview_url, `openInternalDoc('${esc(r.deep_interview_url||'')}')`,
-      `<label class="btn-ghost" style="padding:5px 10px;font-size:12px;cursor:pointer;margin:0">${r.deep_interview_url?'Replace':'Upload'}<input type="file" accept=".pdf,.doc,.docx,.mp3,.mp4,.wav,.m4a" style="display:none" onchange="uploadDeepInterview('${r.id}', this)"></label>`);
+    row('','Deep Interview','Video stays in Google Drive', !!(r.deep_interview_url||dtDrive), r.deep_interview_url?`openInternalDoc('${esc(r.deep_interview_url)}')`:`window.open('${esc((dtDrive&&dtDrive.drive_view_url)||'')}','_blank','noopener')`) +
+    row('','Interview transcript','Upload the Teams / Fireflies transcript (.txt, .vtt, .srt, .docx) or paste it', dtN>0, `dtView('${r.id}')`,
+      `<label class="btn-ghost" style="padding:5px 10px;font-size:12px;cursor:pointer;margin:0">Upload<input type="file" accept=".txt,.vtt,.srt,.docx" style="display:none" onchange="dtUploadFile('${r.id}', this)"></label><button class="btn-ghost" style="padding:5px 10px;font-size:12px" onclick="dtPasteOpen('${r.id}')">Paste</button>`);
+}
+// ===== Deep interview transcripts (video stays in Drive) =====
+async function dtLoadMammoth(){
+  if(window.mammoth) return window.mammoth;
+  await new Promise((res,rej)=>{ const sc=document.createElement('script'); sc.src='https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js'; sc.onload=res; sc.onerror=()=>rej(new Error('Could not load the Word reader')); document.head.appendChild(sc); });
+  return window.mammoth;
+}
+async function dtReadFile(file){
+  const n=file.name.toLowerCase();
+  if(/\.(txt|vtt|srt|md)$/.test(n)) return await file.text();
+  if(n.endsWith('.docx')){ const m=await dtLoadMammoth(); const r=await m.extractRawText({arrayBuffer:await file.arrayBuffer()}); return r.value; }
+  throw new Error('Use .txt, .vtt, .srt or .docx (for a PDF, copy and paste the text)');
+}
+async function dtSave(candidateId, text, source, filename){
+  text=(text||'').trim();
+  if(text.length<200) throw new Error('That transcript looks too short');
+  if(text.length>1500000) throw new Error('That transcript is too long');
+  const {error}=await sb.from('deep_interview_transcripts').insert({candidate_id:candidateId, source, filename:filename||null, content:text, uploaded_by:currentUser.id});
+  if(error) throw error;
+}
+async function dtUploadFile(candidateId, input){
+  const file=input.files && input.files[0]; if(!file) return;
+  try{
+    if(file.size>15*1024*1024) throw new Error('File too large (15 MB max)');
+    toast('Reading transcript…');
+    const text=await dtReadFile(file);
+    await dtSave(candidateId, text, 'file_upload', file.name);
+    toast('Transcript saved');
+    if(drawerCand && drawerCand.id===candidateId) renderInternalDocs(drawerCand);
+  }catch(e){ toast('Could not save: '+(e.message||e)); }
+  input.value='';
+}
+function dtModal(html){
+  const old=document.getElementById('dtBg'); if(old) old.remove();
+  const bg=document.createElement('div'); bg.id='dtBg';
+  bg.style.cssText='position:fixed;inset:0;background:rgba(8,26,44,.55);z-index:95;display:flex;align-items:center;justify-content:center;padding:22px';
+  bg.onclick=e=>{ if(e.target===bg) bg.remove(); };
+  bg.innerHTML='<div style="background:#fff;border-radius:16px;width:min(760px,100%);max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.35)">'+html+'</div>';
+  document.body.appendChild(bg); return bg;
+}
+function dtPasteOpen(candidateId){
+  const bg=dtModal(`<div style="padding:16px 20px;border-bottom:1px solid #eef1f6;font-weight:700;color:var(--navy)">Paste interview transcript</div>
+    <div style="padding:16px 20px;overflow:auto"><textarea id="dtText" style="width:100%;box-sizing:border-box;min-height:300px;border:1px solid #dfe5ec;border-radius:10px;padding:10px;font:inherit;font-size:13px" placeholder="Paste the full transcript here"></textarea></div>
+    <div style="padding:12px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #eef1f6"><button class="btn-ghost" onclick="document.getElementById('dtBg').remove()">Cancel</button><button class="btn-primary" id="dtSaveBtn">Save transcript</button></div>`);
+  bg.querySelector('#dtSaveBtn').onclick=async()=>{
+    try{ await dtSave(candidateId, bg.querySelector('#dtText').value, 'pasted', null); bg.remove(); toast('Transcript saved'); if(drawerCand && drawerCand.id===candidateId) renderInternalDocs(drawerCand); }
+    catch(e){ toast('Could not save: '+(e.message||e)); }
+  };
+}
+async function dtView(candidateId){
+  try{
+    const {data,error}=await sb.from('deep_interview_transcripts').select('source,filename,created_at,content').eq('candidate_id',candidateId).order('created_at',{ascending:false}).limit(1);
+    if(error) throw error;
+    const t=data&&data[0]; if(!t){ toast('No transcript yet'); return; }
+    dtModal(`<div style="padding:16px 20px;border-bottom:1px solid #eef1f6"><b style="color:var(--navy)">Interview transcript</b> <span class="muted" style="font-size:12px">· ${esc(t.filename||t.source)} · ${esc(String(t.created_at).slice(0,10))}</span></div>
+      <div style="padding:16px 20px;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.55">${esc(t.content)}</div>
+      <div style="padding:12px 20px;display:flex;justify-content:flex-end;border-top:1px solid #eef1f6"><button class="btn-ghost" onclick="document.getElementById('dtBg').remove()">Close</button></div>`);
+  }catch(e){ toast('Could not open: '+(e.message||e)); }
 }
 async function openInternalDoc(path){
   if(!path){ toast('No document'); return; }
