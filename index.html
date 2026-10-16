@@ -3780,7 +3780,7 @@ async function openHotList(id){
 let hlAllMembers=[];
 async function hlMembers(){
   const {data,error}=await sb.from('hot_list_members')
-    .select('id,added_at,note, candidates(id,full_name,email,english_level,experience_years,location,skills,resume_url,wexpand_cv_url)')
+    .select('id,added_at,note, candidates(id,full_name,email,english_level,experience_years,location,skills,resume_url,raw_cv_pdf_url,wexpand_cv_url)')
     .eq('hot_list_id',currentHL.id).order('added_at',{ascending:false});
   const box=document.getElementById('hlMembers'); if(!box) return;
   if(error){ box.textContent='Error: '+error.message; return; }
@@ -3815,13 +3815,13 @@ function hlFilterRender(){
   if(!rows.length){ box.className=''; box.innerHTML='<div class="emptybox"><h4>No matches</h4><p>No candidates in this list match your search. Try a different name or keyword.</p></div>'; return; }
   box.className='cand-list';
   box.innerHTML=rows.map(m=>{
-    const c=m.candidates||{}; const cv=c.wexpand_cv_url||c.resume_url;
+    const c=m.candidates||{}; const cv=c.wexpand_cv_url||c.raw_cv_pdf_url||c.resume_url; const cvOrig=c.raw_cv_pdf_url||c.resume_url;
     const skills=(c.skills||[]).slice(0,3).map(s=>`<span class="chip">${esc(s)}</span>`).join('');
     const moreSk=(c.skills||[]).length>3?`<span class="chip">+${c.skills.length-3}</span>`:'';
     return `<div class="cand">
       <div class="avatar round ${gClass(c.full_name)}">${esc(initials(c.full_name))}</div>
       <div class="cinfo"><div class="cn">${esc(c.full_name)||'(no name)'}</div>
-        <div class="cm">${c.english_level?`<span>English: <b>${esc(c.english_level)}</b></span>`:''}${c.experience_years!=null?`<span><b>${c.experience_years}</b> yrs</span>`:''}${c.location?`<span>${esc(c.location)}</span>`:''}${cv?`<span><a class="cv" href="${esc(cv)}" target="_blank">CV</a></span>`:''}</div>
+        <div class="cm">${c.english_level?`<span>English: <b>${esc(c.english_level)}</b></span>`:''}${c.experience_years!=null?`<span><b>${c.experience_years}</b> yrs</span>`:''}${c.location?`<span>${esc(c.location)}</span>`:''}${cv?`<span><a class="cv" href="${esc(cv)}" target="_blank">${c.wexpand_cv_url?'Wexpand CV':'CV'}</a></span>`:''}${(c.wexpand_cv_url&&cvOrig)?`<span><a class="cv" href="${esc(cvOrig)}" target="_blank">Original CV</a></span>`:''}</div>
         ${skills||moreSk?`<div class="cm" style="margin-top:4px">${skills}${moreSk}</div>`:''}</div>
       <div class="cact"><button class="fbtn" style="padding:5px 10px" onclick="removeHLMember('${m.id}')">Remove</button></div>
     </div>`;
@@ -8203,6 +8203,7 @@ function pwPreviewRender(){
       <button class="btn-ghost" onclick="pwOpenDoc('assessment','${a.id}')">Assessment${(s.has_assessment||a.assessment_pdf_url)?' ✓':''}</button>
       <button class="btn-ghost" onclick="pwOpenDoc('matrix','${a.id}')">Evaluation Matrix${(s.has_evaluation_matrix||a.matrix_pdf_url)?' ✓':''}</button>
       <button class="btn-ghost" onclick="cvConvert('${c.id}', this)" title="${c.raw_cv_pdf_url||c.resume_url?'Convert this resume to the Wexpand format':'Needs a real resume (PDF) imported first'}">${c.wexpand_cv_url?'Re-convert':'Wexpand format'}</button>
+      ${(c.raw_cv_pdf_url||c.resume_url)?`<a class="btn-ghost" style="text-decoration:none" href="${esc(c.raw_cv_pdf_url||c.resume_url)}" target="_blank" title="The original resume, untouched">Original CV ↗</a>`:''}
       ${c.wexpand_cv_url?`<a class="btn-ghost" style="text-decoration:none" href="${esc(c.wexpand_cv_url)}" target="_blank">View Wexpand CV ↗</a>`:''}
     </div>
     <div class="pwp-comments">
