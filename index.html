@@ -946,7 +946,7 @@ const PIPE=[
   {k:'client_interview_final',t:'Clients final interview',        g:'teal'},
   {k:'assessment',            t:'Assessment',                     g:'purple'},
   {k:'rejected_client',       t:'Rejected by Client',             g:'red'},
-  {k:'verbal_offer',          t:'Verbal offer',                   g:'greenlite'},
+  {k:'verbal_offer',          t:'Offer extended',                   g:'greenlite'},
   {k:'background_medical',    t:'Background Check & Medical Test', g:'amber'},
   {k:'offer_accepted',        t:'Offer Letter accepted',          g:'green'},
   {k:'hired',                 t:'Hired',                          g:'green'},
@@ -1536,7 +1536,7 @@ async function renderAssessments(){
   catch(_){ /* AI engine not yet available in this project — silently ignored */ }
   rows.sort((a,b)=> new Date(b.submitted_at||b.started_at||0) - new Date(a.submitted_at||a.started_at||0));
   // mapa de posiciones para mostrar el título
-  try{ if(!Object.keys(xhPosMap).length){ const {data}=await sb.from('positions').select('id,title'); (data||[]).forEach(p=>xhPosMap[p.id]=p.title); } }catch(_){}
+  try{ if(!Object.keys(xhPosMap).length){ const {data}=await sb.from('positions').select('id,title,status'); window.xhPosOpen=window.xhPosOpen||{}; (data||[]).forEach(p=>{ xhPosMap[p.id]=p.title; xhPosOpen[p.id]=(p.status==='open'); }); } }catch(_){}
   xhPaint(rows);
 }
 function xhPaint(rows){
@@ -1657,7 +1657,7 @@ async function xhAiResend(rowId, btn){
 let xnType='ai', xnBpCache={};
 function xhNewOpen(){
   xnType='ai'; xnBpCache={};
-  const posOpts=Object.keys(xhPosMap).sort((a,b)=>(xhPosMap[a]||'').localeCompare(xhPosMap[b]||''))
+  const posOpts=Object.keys(xhPosMap).filter(id=>(window.xhPosOpen||{})[id]).sort((a,b)=>(xhPosMap[a]||'').localeCompare(xhPosMap[b]||''))
     .map(id=>`<option value="${id}">${esc(xhPosMap[id]||'—')}</option>`).join('');
   const html=`<div id="xnBg" style="position:fixed;inset:0;background:rgba(8,26,44,.55);z-index:95;display:flex;align-items:center;justify-content:center;padding:22px" onclick="if(event.target===this)xhNewClose()">
     <div style="background:#fff;border-radius:16px;width:min(460px,100%);overflow:hidden;box-shadow:0 24px 70px rgba(0,0,0,.35)">
@@ -4919,6 +4919,7 @@ async function vmUpload(btn){
 }
 
 // ===== CANDIDATES (whole database · table + card views) =====
+let acPos='', acPosOpts=null;
 let acPage=0, acQ='', acView='table', acBusy=false, acTotal=0, acTimer;
 function acCSS(){
   if(document.getElementById('acCSS')) return;
@@ -5002,7 +5003,8 @@ function renderAllCandidates(){
     <div class="ac-wrap">
       <button class="pw-back" onclick="recruitHome()">← Back to Recruiting</button>
       <div class="ac-bar">
-        <input class="ac-search" id="acSearch" placeholder="Search name, location, source, skills…" value="${esc(acQ)}" oninput="acOnType(this.value)">
+        <input class="ac-search" id="acSearch" placeholder="Search name, email, phone, location, skills…" value="${esc(acQ)}" oninput="acOnType(this.value)">
+        <select id="acPosSel" style="padding:10px 12px;border:1px solid var(--line,#dbe2ea);border-radius:10px;font-size:13.5px;max-width:280px" onchange="acPos=this.value;acPage=0;acLoad()"><option value="">All positions</option></select>
         <div class="ac-toggle">
           <button id="acTbl" class="${acView==='table'?'on':''}" onclick="acSetView('table')">▦ Table</button>
           <button id="acCrd" class="${acView==='cards'?'on':''}" onclick="acSetView('cards')">▤ Cards</button>
@@ -5011,7 +5013,14 @@ function renderAllCandidates(){
       </div>
       <div id="acBody"><div class="muted" style="padding:22px">Loading…</div></div>
     </div>`;
-  acPage=0; acLoad();
+  acPage=0; acLoad(); acLoadPosOpts();
+}
+async function acLoadPosOpts(){
+  const sel=document.getElementById('acPosSel'); if(!sel) return;
+  if(!acPosOpts){ try{ const {data}=await sb.from('positions').select('id,title,status').order('title'); acPosOpts=data||[]; }catch(_){ acPosOpts=[]; } }
+  const o=acPosOpts.filter(p=>p.status==='open'), c=acPosOpts.filter(p=>p.status!=='open');
+  const opt=(p,tag)=>`<option value="${p.id}" ${acPos===p.id?'selected':''}>${esc(p.title)}${tag}</option>`;
+  sel.innerHTML='<option value="">All positions</option>'+(o.length?'<optgroup label="Active">'+o.map(p=>opt(p,'')).join('')+'</optgroup>':'')+(c.length?'<optgroup label="Closed / other">'+c.map(p=>opt(p,' ('+p.status+')')).join('')+'</optgroup>':'');
 }
 function acOnType(v){ acQ=v; clearTimeout(acTimer); acTimer=setTimeout(()=>{ acPage=0; acLoad(); },300); }
 function acSetView(v){ acView=v; const t=document.getElementById('acTbl'), c=document.getElementById('acCrd'); if(t&&c){ t.classList.toggle('on',v==='table'); c.classList.toggle('on',v==='cards'); } acRender(); }
@@ -5021,7 +5030,7 @@ async function acLoad(){
   const from=acPage*PAGE_SIZE;
   const term=(acQ||'').trim();
   const terms=term?splitTerms(term):null;
-  const {data,error}=await sb.rpc('search_candidates',{p_terms:terms,p_limit:PAGE_SIZE,p_offset:from});
+  const {data,error}=acPos?await sb.rpc('search_candidates_v2',{p_terms:terms,p_limit:PAGE_SIZE,p_offset:from,p_position:acPos}):await sb.rpc('search_candidates',{p_terms:terms,p_limit:PAGE_SIZE,p_offset:from});
   acBusy=false;
   if(error){ if(host) host.innerHTML='<div class="muted" style="padding:22px">Error: '+esc(error.message)+'</div>'; return; }
   const rows=data||[];
@@ -5056,13 +5065,14 @@ function acRender(){
     }).join('')+'</div>';
   } else {
     body=`<table class="ac-tbl"><thead><tr>
-      <th>Name</th><th>English</th><th>Exp</th><th>Location</th><th>Skills</th><th>Source</th><th>CV</th></tr></thead><tbody>`+
+      <th>Name</th><th>Applied</th><th>English</th><th>Exp</th><th>Location</th><th>Skills</th><th>Source</th><th>CV</th></tr></thead><tbody>`+
       currentRows.map((r,i)=>{
         const skills=(r.skills||[]).slice(0,3).map(s=>`<span class="chip" title="${esc(s)}">${esc(s)}</span>`).join('');
         const more=(r.skills||[]).length>3?`<span class="chip">+${r.skills.length-3}</span>`:'';
         const cv=r.resume_url?`<a class="cv" href="${esc(r.resume_url)}" target="_blank" onclick="event.stopPropagation()">View</a>`:'<span class="muted">—</span>';
         return `<tr class="row" onclick="openDrawer(${i})">
           <td><b>${esc(r.full_name)||'<span class=muted>(no name)</span>'}</b></td>
+          <td style="white-space:nowrap">${r.applied_at?esc(new Date(r.applied_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})):'<span class=muted>—</span>'}</td>
           <td>${esc(r.english_level)||'<span class=muted>—</span>'}</td>
           <td>${r.experience_years!=null?esc(r.experience_years)+' yr':'—'}</td>
           <td>${esc(r.location)||'<span class=muted>—</span>'}</td>
@@ -5956,7 +5966,7 @@ async function openJob(id, from){
 }
 async function pwLoadApps(){
   const {data}=await sb.from('applications')
-    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,client_visible,wtim_pdf_url,assessment_pdf_url,matrix_pdf_url,video_interview_url, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url,comments,source,tags,import_data)')
+    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,careers_applied_at,client_visible,wtim_pdf_url,assessment_pdf_url,matrix_pdf_url,video_interview_url, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url,comments,source,tags,import_data,applied_at)')
     .eq('position_id',pwPos.id).order('created_at',{ascending:false});
   pwApps=data||[];
   pwVideoEmails=new Set();
@@ -7774,7 +7784,7 @@ function pwCandidates(){
   }
   if(pwView==='list') return header+bulkBar+pwListView();
   const cols=PIPE.map(st=>{
-    const inCol=pwApps.filter(a=>pipeStageOf(a)===st.k);
+    const inCol=pwApps.filter(a=>pipeStageOf(a)===st.k).sort((x,y)=>(((x.candidates||{}).full_name)||'').localeCompare((((y.candidates||{}).full_name)||''),'es',{sensitivity:'base'}));
     const cards=inCol.map(a=>pwPipeCard(a)).join('') || `<div class="pcol-empty">—</div>`;
     const selectAll=pwBulkMode&&inCol.length?`<button class="pcol-selall" title="Select all in this column" onclick="pwBulkSelectAllInCol('${st.k}')">Select all</button>`:'';
     return `<div class="pcol" data-stage="${st.k}" ${pwBulkMode?'':`ondragover="onPipeOver(event)" ondragleave="onPipeLeave(event)" ondrop="onPipeDrop(event,'${st.k}')"`}>
@@ -7861,6 +7871,11 @@ function pvReasonPop(appId, anchor){
     pvClosePop(); toast('Thanks — feedback saved');
   };
 }
+function pwAppliedStr(a){
+  const d=(a&&a.careers_applied_at)||((a&&a.candidates)||{}).applied_at||(a&&a.created_at); if(!d) return '';
+  const t=new Date(d); if(isNaN(t)) return '';
+  return t.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+}
 function pwPipeCard(a){
   const c=a.candidates||{}; const cv=c.raw_cv_pdf_url||c.wexpand_cv_url||c.resume_url; const cur=pipeStageOf(a);
   const opts=PIPE.map(s=>`<option value="${s.k}" ${cur===s.k?'selected':''}>${esc(s.t)}</option>`).join('');
@@ -7882,6 +7897,7 @@ function pwPipeCard(a){
       <div class="p-badgecol">${c.id?pwScoreBadge(c.id):''}${pwVoteBox(a)}</div>
     </div>
     ${remark?`<div class="pm" style="margin-top:6px"><span class="chip" style="background:#f3f5f8;color:var(--muted);font-size:10.5px">${esc(remark)}</span></div>`:''}
+    ${pwAppliedStr(a)?`<div class="pm" style="margin-top:6px"><span title="Date the candidate applied">Applied <b>${pwAppliedStr(a)}</b></span></div>`:''}
     <div class="pm">
       ${c.english_level?`<span>EN: <b>${esc(c.english_level)}</b></span>`:''}
       ${c.experience_years!=null?`<span><b>${c.experience_years}</b> yrs</span>`:''}
