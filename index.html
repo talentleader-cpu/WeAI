@@ -7662,6 +7662,41 @@ async function pwOpenClientView(){
   `;
   showModal('Share with client · '+(pwPos.title||''), body, null);
 }
+function pwSowOpen(){
+  if(!pwPos) return;
+  const p=pwPos, ok=!!p.sow_approved_at;
+  const body=`<div style="font-size:13.5px;line-height:1.6;max-width:520px">
+    ${ok?`<p style="margin-top:0"><b>Approved by the client</b> on ${fmtDay(p.sow_approved_at)}.</p>`:`<p style="margin-top:0">Upload the SOW signed or approved by the client. The position will show <b>SOW approved</b> with the date.</p>`}
+    ${p.sow_pdf_url?`<p><a href="${esc(p.sow_pdf_url)}" target="_blank" rel="noopener">View SOW (PDF)</a></p>`:''}
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-primary" onclick="pwSowUpload()">${ok?'Replace PDF':'Upload SOW PDF'}</button>${ok?'<button class="btn-ghost" onclick="pwSowRemove()">Remove approval</button>':''}</div></div>`;
+  showModal('SOW · '+(p.title||''), body, null);
+}
+function pwSowUpload(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf';
+  inp.onchange=async()=>{
+    const file=inp.files&&inp.files[0]; if(!file) return;
+    if(file.type && file.type!=='application/pdf'){ toast('Please choose a PDF file.'); return; }
+    if(file.size>25*1024*1024){ toast('That PDF is larger than 25 MB.'); return; }
+    toast('Uploading…');
+    try{
+      const path=`sow/${pwPos.id}/sow-${Date.now()}-${Math.random().toString(36).slice(2,8)}.pdf`;
+      const {error:upErr}=await sb.storage.from('assessment-docs').upload(path,file,{contentType:'application/pdf'});
+      if(upErr) throw upErr;
+      const url=sb.storage.from('assessment-docs').getPublicUrl(path).data.publicUrl;
+      const now=new Date().toISOString();
+      const {error}=await sb.from('positions').update({sow_pdf_url:url,sow_approved_at:pwPos.sow_approved_at||now,sow_approved_by:(currentUser&&currentUser.id)||null}).eq('id',pwPos.id);
+      if(error) throw error;
+      pwPos.sow_pdf_url=url; pwPos.sow_approved_at=pwPos.sow_approved_at||now;
+      toast('SOW saved'); pwPaintBody(); pwSowOpen();
+    }catch(e){ toast('Could not upload: '+(e.message||e)); }
+  };
+  inp.click();
+}
+async function pwSowRemove(){
+  const {error}=await sb.from('positions').update({sow_pdf_url:null,sow_approved_at:null,sow_approved_by:null}).eq('id',pwPos.id);
+  if(error){ toast('Could not remove: '+error.message); return; }
+  pwPos.sow_pdf_url=null; pwPos.sow_approved_at=null; toast('SOW approval removed'); pwPaintBody(); closeModal();
+}
 async function pwSaveOwnerCalendarLink(profileId, inputId){
   const el=document.getElementById(inputId||'cvCalUrl');
   const url=el?el.value.trim():'';
@@ -7773,9 +7808,10 @@ function pwCandidates(){
   const recalc=`<button class="btn-ghost" onclick="pwRecalcScores()" title="Recalculates the predictive score for every candidate in this pipeline">Recalculate scores</button>`;
   const findSimilar=`<button class="btn-ghost" onclick="pwFindSimilar()" title="Searches our candidate database (semantic AI match) for the best-fit profiles for this position">Find matching candidates</button>`;
   const bulkToggle=`<button class="btn-ghost" onclick="pwBulkToggle()">${pwBulkMode?'Cancel selection':'Move multiple candidates'}</button>`;
+  const sowBtn=`<button class="btn-ghost" onclick="pwSowOpen()" title="Signed SOW approved by the client" style="${pwPos.sow_approved_at?'background:#e4f3ec;color:#1c7a57;border-color:#bfe3cf':''}">${pwPos.sow_approved_at?'SOW approved ✓':'SOW approved by client'}</button>`;
   const clientView=`<button class="btn-ghost" onclick="pwOpenClientView()" title="Configure what this position shares with the client">${pwPos.client_view_enabled?'Client view ✓':'Share with client'}</button>`;
   const viewSwitch=`<div class="vsw" role="tablist" aria-label="View"><button class="${pwView==='kanban'?'on':''}" onclick="pwSetView('kanban')">${ICN_KANBAN} Kanban</button><button class="${pwView==='list'?'on':''}" onclick="pwSetView('list')">${ICN_LIST} List</button></div>`;
-  const header=`<div class="pw-actions" style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">${add}${recalc}${findSimilar}${bulkToggle}${clientView}<span class="muted" style="font-size:13px">${pwApps.length} candidate${pwApps.length===1?'':'s'} in this pipeline</span><span style="margin-left:auto">${viewSwitch}</span></div>`;
+  const header=`<div class="pw-actions" style="display:flex;align-items:center;gap:12px;margin-bottom:6px;flex-wrap:wrap">${add}${recalc}${findSimilar}${bulkToggle}${clientView}${sowBtn}<span class="muted" style="font-size:13px">${pwApps.length} candidate${pwApps.length===1?'':'s'} in this pipeline</span><span style="margin-left:auto">${viewSwitch}</span></div>`;
   if(!pwApps.length){
     return header+`<p class="pboard-hint">The 14 stages run from <b>All candidates</b> to <b>Hired</b>. Every move is logged with who did it and when.</p>
       <div class="emptybox"><h4>No candidates in this pipeline yet</h4>
