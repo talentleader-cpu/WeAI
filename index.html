@@ -7923,11 +7923,56 @@ function onPipeDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
 function onPipeOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('drop'); }
 function onPipeLeave(e){ e.currentTarget.classList.remove('drop'); }
 function onPipeDrop(e,stageKey){ e.preventDefault(); e.currentTarget.classList.remove('drop'); const id=dragAppId||(e.dataTransfer&&e.dataTransfer.getData('text/plain')); dragAppId=null; if(id) moveCandStage(id,stageKey); }
+let rrCache=null;
+async function rrLoad(force){
+  if(rrCache&&!force) return rrCache;
+  const {data}=await sb.from('rejection_reasons').select('id,label,scope').eq('active',true).order('label');
+  rrCache=data||[]; return rrCache;
+}
 async function moveCandStage(appId, stage){
   const a=pwApps.find(x=>x.id===appId); if(!a) return;
   const prev=pipeStageOf(a); if(prev===stage) return;
+  if(stage==='rejected_wexpand'||stage==='rejected_client'){ return rrAsk(appId, stage); }
+  return moveCandStageDo(appId, stage, null);
+}
+async function rrAsk(appId, stage){
+  const list=await rrLoad(true);
+  const sc=stage==='rejected_client'?'client':'wexpand';
+  const opts=list.filter(r=>r.scope==='both'||r.scope===sc).map(r=>`<option value="${esc(r.label)}">${esc(r.label)}</option>`).join('');
+  const bg=dtModal(`<div style="padding:16px 20px;border-bottom:1px solid #eef1f6;font-weight:700;color:var(--navy)">Rejection reason</div>
+    <div style="padding:16px 20px;overflow:auto;display:flex;flex-direction:column;gap:10px">
+      <label style="font-size:13px;font-weight:600">Reason</label>
+      <select id="rrSel" style="padding:9px;border:1px solid #dfe5ec;border-radius:10px;font:inherit;font-size:13.5px"><option value="">Select a reason…</option>${opts}<option value="__new">+ Add a new reason…</option></select>
+      <input id="rrNew" placeholder="New reason" style="display:none;padding:9px;border:1px solid #dfe5ec;border-radius:10px;font:inherit;font-size:13.5px">
+      <label style="font-size:13px;font-weight:600">Note (optional)</label>
+      <textarea id="rrNote" style="min-height:80px;padding:9px;border:1px solid #dfe5ec;border-radius:10px;font:inherit;font-size:13.5px"></textarea>
+    </div>
+    <div style="padding:12px 20px;display:flex;justify-content:flex-end;gap:8px;border-top:1px solid #eef1f6"><button class="btn-ghost" id="rrCancel">Cancel</button><button class="btn-primary" id="rrOk">Reject candidate</button></div>`);
+  const sel=bg.querySelector('#rrSel'), nw=bg.querySelector('#rrNew');
+  sel.onchange=()=>{ nw.style.display=sel.value==='__new'?'block':'none'; };
+  bg.querySelector('#rrCancel').onclick=()=>{ bg.remove(); pwPaintBody(); };
+  bg.querySelector('#rrOk').onclick=async()=>{
+    let reason=sel.value;
+    if(reason==='__new'){
+      reason=nw.value.trim();
+      if(!reason){ toast('Write the new reason'); return; }
+      const {error}=await sb.from('rejection_reasons').insert({label:reason,scope:'both'});
+      if(error && !/duplicate|unique/i.test(error.message)){ toast('Could not save reason: '+error.message); return; }
+      rrCache=null;
+    }
+    if(!reason){ toast('Select a reason'); return; }
+    const note=bg.querySelector('#rrNote').value.trim();
+    bg.remove();
+    moveCandStageDo(appId, stage, {reason, note});
+  };
+}
+async function moveCandStageDo(appId, stage, rr){
+  const a=pwApps.find(x=>x.id===appId); if(!a) return;
+  const prev=pipeStageOf(a); if(prev===stage) return;
   a.stage=stage; pwPaintBody();
-  const {error}=await sb.from('applications').update({stage}).eq('id',appId);
+  const payload={stage};
+  if(rr){ payload.rejection_reason=rr.reason; payload.stage_remark='Reason: '+rr.reason+(rr.note?' — '+rr.note:''); }
+  const {error}=await sb.from('applications').update(payload).eq('id',appId);
   if(error){ a.stage=prev; pwPaintBody(); alert('Could not move: '+error.message); return; }
   toast('→ '+pipeInfo(stage).t);
   if(pwPreviewIdx>=0 && pwApps[pwPreviewIdx] && pwApps[pwPreviewIdx].id===appId){
