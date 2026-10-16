@@ -774,7 +774,7 @@ html body #login{background:radial-gradient(1200px 600px at 20% -10%,#0B57A8 0%,
           <div class="crumb" id="crumb">Recruiting</div>
           <h2 id="pageTitle">Candidates</h2>
         </div>
-        <button class="btn-primary" style="margin-left:auto" onclick="liOpen()">+ Add from LinkedIn</button>
+        <span style="margin-left:auto;display:flex;align-items:center;gap:10px"><button class="btn-ghost" id="bellBtn" onclick="bellOpen()" title="Notifications" style="position:relative;padding:6px 11px;font-size:15px">&#128276;<span id="bellCnt" style="display:none;position:absolute;top:-6px;right:-6px;background:#c0392b;color:#fff;border-radius:10px;font-size:10.5px;font-weight:800;padding:1px 6px"></span></button><button class="btn-primary" onclick="liOpen()">+ Add from LinkedIn</button></span>
       </div>
       <div id="subnav"></div>
       <div id="view"></div>
@@ -7923,6 +7923,40 @@ function onPipeDragEnd(e){ e.currentTarget.classList.remove('dragging'); }
 function onPipeOver(e){ e.preventDefault(); e.dataTransfer.dropEffect='move'; e.currentTarget.classList.add('drop'); }
 function onPipeLeave(e){ e.currentTarget.classList.remove('drop'); }
 function onPipeDrop(e,stageKey){ e.preventDefault(); e.currentTarget.classList.remove('drop'); const id=dragAppId||(e.dataTransfer&&e.dataTransfer.getData('text/plain')); dragAppId=null; if(id) moveCandStage(id,stageKey); }
+let bellNotifs=[], bellUpds=[], bellSeenAt=null;
+async function bellLoad(){
+  try{
+    const u=(await sb.auth.getUser()).data.user; if(!u) return;
+    const [n,p,s]=await Promise.all([
+      sb.from('notifications').select('*').order('created_at',{ascending:false}).limit(40),
+      sb.from('platform_updates').select('*').order('created_at',{ascending:false}).limit(15),
+      sb.from('platform_updates_seen').select('seen_at').eq('user_id',u.id).maybeSingle()]);
+    bellNotifs=n.data||[]; bellUpds=p.data||[]; bellSeenAt=s.data?s.data.seen_at:null;
+    bellCount();
+  }catch(_){}
+}
+function bellUnseenUpds(){ return bellUpds.filter(x=>!bellSeenAt||new Date(x.created_at)>new Date(bellSeenAt)); }
+function bellCount(){
+  const c=bellNotifs.filter(x=>!x.read_at).length+bellUnseenUpds().length;
+  const el=document.getElementById('bellCnt'); if(!el) return;
+  el.textContent=c>99?'99+':c; el.style.display=c?'block':'none';
+}
+function bellOpen(){
+  const un=bellNotifs.filter(x=>!x.read_at);
+  const ic={video_pending_48h:'&#127909;',under_client_approval:'&#9989;'};
+  const rows=bellNotifs.map(x=>`<div style="padding:10px 20px;border-bottom:1px solid #eef1f6;${x.read_at?'opacity:.6':'background:#f6faff'}"><div style="font-size:13.5px;font-weight:600;color:var(--navy)">${ic[x.kind]||'&#128276;'} ${esc(x.title)}</div><div style="font-size:12px;color:#6b7785">${esc(x.body||'')} &middot; ${fmtDay(x.created_at)}</div></div>`).join('')||'<p class="muted" style="padding:14px 20px;font-size:13px">No alerts yet.</p>';
+  const nu=bellUnseenUpds();
+  const upd=bellUpds.map(x=>`<div style="padding:10px 20px;border-bottom:1px solid #eef1f6;${nu.includes(x)?'background:#fffbe9':''}"><div style="font-size:13.5px;font-weight:600;color:var(--navy)">&#10024; ${esc(x.title)}</div><div style="font-size:12.5px;color:#4a5866">${esc(x.body||'')}</div><div style="font-size:11.5px;color:#8a97a3">${fmtDay(x.created_at)}</div></div>`).join('');
+  const bg=dtModal(`<div style="padding:16px 20px;border-bottom:1px solid #eef1f6;font-weight:700;color:var(--navy);display:flex;justify-content:space-between;align-items:center">Notifications<button class="btn-ghost" id="bellAll" style="font-size:12px;padding:4px 10px">Mark all as read</button></div>
+    <div style="overflow:auto"><div style="padding:10px 20px 4px;font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#8a97a3">ALERTS</div>${rows}<div style="padding:14px 20px 4px;font-size:11.5px;font-weight:800;letter-spacing:.06em;color:#8a97a3">PLATFORM UPDATES</div>${upd||'<p class="muted" style="padding:0 20px 14px;font-size:13px">Nothing new.</p>'}</div>`);
+  bg.querySelector('#bellAll').onclick=async()=>{
+    const u=(await sb.auth.getUser()).data.user;
+    await sb.from('notifications').update({read_at:new Date().toISOString()}).is('read_at',null);
+    await sb.from('platform_updates_seen').upsert({user_id:u.id,seen_at:new Date().toISOString()});
+    await bellLoad(); bg.remove(); toast('All read');
+  };
+}
+setTimeout(bellLoad,4000); setInterval(bellLoad,120000);
 let rrCache=null;
 async function rrLoad(force){
   if(rrCache&&!force) return rrCache;
