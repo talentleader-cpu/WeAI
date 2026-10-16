@@ -3998,6 +3998,7 @@ function openDrawer(i){
   document.getElementById('dMeta').textContent=[r.email,r.phone].filter(Boolean).join('  ·  ');
   const skHtml=skills.map(s=>`<span class="sk">${esc(s)}</span>`).join('');
   const f=(k,v,isHtml)=>`<div class="cp-f"><div class="k">${k}</div><div class="v">${v?(isHtml?v:esc(v)):'—'}</div></div>`;
+  const origCv=r.raw_cv_pdf_url||r.resume_url;
   let html=`
     <div class="cp-head">${candAvatar(r,88,true)}
       <div class="nm">${esc(r.full_name||'(no name)')}</div>
@@ -4011,8 +4012,8 @@ function openDrawer(i){
     </div>
     <div style="display:flex;gap:8px;margin:0 0 16px;justify-content:center;flex-wrap:wrap">
       <button class="btn-primary" style="padding:8px 14px" onclick="addCandToHotList()">${ICN.star} Hot list</button>
-      ${r.raw_cv_pdf_url?`<a class="btn-ghost" style="text-decoration:none;padding:8px 14px" href="${esc(r.raw_cv_pdf_url)}" target="_blank">${ICN.doc} CV</a>`:`<span class="chip" style="background:#f7e6e1;color:#b23b22" title="This candidate's actual resume (PDF) has not been imported yet">${ICN.doc} Resume not available</span>`}
-      ${r.raw_cv_pdf_url?`<button class="btn-ghost" style="padding:8px 14px" onclick="cvConvert('${r.id}', this)">${ICN.doc} Wexpand format</button>`:''}
+      ${origCv?`<a class="btn-ghost" style="text-decoration:none;padding:8px 14px" href="${esc(origCv)}" target="_blank" title="Original resume, never replaced by the Wexpand format">${ICN.doc} Original CV</a>`:`<span class="chip" style="background:#f7e6e1;color:#b23b22" title="This candidate's actual resume (PDF) has not been imported yet">${ICN.doc} Resume not available</span>`}
+      ${origCv?`<button class="btn-ghost" style="padding:8px 14px" onclick="cvConvert('${r.id}', this)" title="Creates a separate Wexpand-format copy. The original CV is kept.">${ICN.doc} ${r.wexpand_cv_url?'Re-convert':'Wexpand format'}</button>`:''}
       ${linkedin?`<a class="btn-ghost" style="text-decoration:none;padding:8px 14px" href="${esc(linkedin)}" target="_blank">${ICN.link} LinkedIn</a>`:''}
       <span id="cvWxLink">${r.wexpand_cv_url?`<a class="btn-ghost" style="text-decoration:none;padding:8px 14px" href="${esc(r.wexpand_cv_url)}" target="_blank">${ICN.doc} View Wexpand</a>`:''}</span>
     </div>
