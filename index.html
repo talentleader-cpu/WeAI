@@ -7566,8 +7566,14 @@ async function pwToggleClientVisible(appId){
   a.client_visible=next; pwPaintBody();
   const {error}=await sb.from('applications').update({client_visible:next}).eq('id',appId);
   if(error){ a.client_visible=!next; pwPaintBody(); toast('Could not update: '+(error.message||error)); return; }
+  if(next && pwPos && !pwPos.client_view_enabled){
+    const tk=pwPos.client_view_token||pwNewClientToken();
+    const {error:e2}=await sb.from('positions').update({client_view_enabled:true,client_view_token:tk,client_view_updated_at:new Date().toISOString()}).eq('id',pwPos.id);
+    if(!e2){ pwPos.client_view_enabled=true; pwPos.client_view_token=tk; toast('Shared. Client view turned on for this position: open "Share with client" to copy the link.'); return; }
+  }
   toast(next?'Shared with client':'Removed from client view');
 }
+function pwNewClientToken(){ return (crypto.randomUUID?crypto.randomUUID().replace(/-/g,''):'')+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
 let pwClientViewBaseCache=null;
 async function pwOpenClientView(){
   if(!pwPos) return;
@@ -7576,6 +7582,11 @@ async function pwOpenClientView(){
     pwClientViewBaseCache=(data&&data.value)?String(data.value).replace(/\/+$/,''):'';
   }
   const base=pwClientViewBaseCache;
+  if(!pwPos.client_view_token){
+    const tk=pwNewClientToken();
+    const {error:e3}=await sb.from('positions').update({client_view_token:tk}).eq('id',pwPos.id);
+    if(!e3) pwPos.client_view_token=tk;
+  }
   const f=pwPos.client_view_fields||{cv:true,matrix:true,video:true,comments:true,english_level:true,avatar:true};
   const link=(pwPos.client_view_token&&base)?(base+'/?t='+pwPos.client_view_token):null;
   const sharedCount=pwApps.filter(a=>a.client_visible).length;
@@ -7599,9 +7610,10 @@ async function pwOpenClientView(){
         <input readonly value="${esc(link)}" style="flex:1;font-size:12px;padding:6px 8px;border:1px solid #d7e2ec;border-radius:6px;background:#fff" onclick="this.select()">
         <button class="btn-ghost" style="padding:6px 12px;font-size:12px" onclick="navigator.clipboard.writeText('${esc(link)}').then(()=>toast('Link copied')).catch(()=>{})">Copy</button>
       </div>
+      ${pwPos.client_view_enabled?'':'<div style="font-size:12px;color:#8a6410;margin-top:6px">This link will say "Invalid link" until you check <b>Enable the client view</b> below and press Save.</div>'}
     </div>`;
   }else{
-    linkBox=`<p class="muted" style="font-size:12px;margin:0 0 14px">Enable the view and save to generate the link.</p>`;
+    linkBox=`<p class="muted" style="font-size:12px;margin:0 0 14px">Preparing the link… close and reopen this window.</p>`;
   }
   const body=`
     <label style="display:flex;align-items:center;gap:10px;margin-bottom:14px;font-size:13.5px;font-weight:700;cursor:pointer">
