@@ -948,7 +948,6 @@ const PIPE=[
   {k:'rejected_client',       t:'Rejected by Client',             g:'red'},
   {k:'verbal_offer',          t:'Offer extended',                   g:'greenlite'},
   {k:'background_medical',    t:'Background Check & Medical Test', g:'amber'},
-  {k:'offer_accepted',        t:'Offer Letter accepted',          g:'green'},
   {k:'hired',                 t:'Hired',                          g:'green'},
 ];
 const PIPE_MAP=Object.fromEntries(PIPE.map(s=>[s.k,s]));
@@ -2127,7 +2126,7 @@ function anCSS(){
 // ===== KPIs (2026-10-07) — one RPC (kpi_dashboard) feeds the whole screen =====
 IC.kpis=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>`;
 let kpDays=30;
-const KP_FUNNEL=['video_interview','wexpand_interview_1','under_client_approval','client_vetting','client_interview_1','client_interview_final','assessment','verbal_offer','background_medical','offer_accepted','hired'];
+const KP_FUNNEL=['video_interview','wexpand_interview_1','under_client_approval','client_vetting','client_interview_1','client_interview_final','assessment','verbal_offer','background_medical','hired'];
 function kpStageKey(s){
   if(!s) return '';
   if(PIPE_MAP[s]) return s;
