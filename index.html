@@ -5311,7 +5311,7 @@ async function assistantHome(){
   }
 }
 function showAssistantWelcome(){
-  appendBub(`Hi, I'm WeAI — your recruiting consultant. I can look up your candidates, positions, market salaries and costs, and also give you expert recruiting advice in general. You can attach a job description or a screenshot (📎) and we'll talk about it.`,false);
+  appendBub(`Hi, I'm WeAI — your recruiting consultant. I can look up your candidates, positions, market salaries and costs, and also give you expert recruiting advice in general. You can attach a job description or a screenshot (paperclip) and we'll talk about it.`,false);
   const chips=document.createElement('div'); chips.className='chips2';
   chips.innerHTML=`<button class="chip2" onclick="ask('How many candidates in Guadalajara')">In Guadalajara</button>
     <button class="chip2" onclick="ask('English level breakdown')">English levels</button>
@@ -5335,8 +5335,8 @@ function attachFeedback(bubEl, question, answerHtml){
   const row=document.createElement('div');
   row.style.cssText='margin-top:8px;padding-top:6px;border-top:1px solid rgba(150,150,150,.18);font-size:12px;opacity:.8;display:flex;gap:10px;align-items:center';
   row.innerHTML=`<span style="opacity:.75">Was this answer helpful?</span>
-    <button type="button" class="fb-btn" data-r="1" title="Yes, it helped" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0">👍</button>
-    <button type="button" class="fb-btn" data-r="-1" title="No, it didn't help" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0">👎</button>
+    <button type="button" class="fb-btn" data-r="1" title="Yes, it helped" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0"><svg class="wx-ic" viewBox="0 0 24 24"><path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 012 2v4h5.5a2 2 0 012 2.3l-1.2 6a2 2 0 01-2 1.7H7"/></svg></button>
+    <button type="button" class="fb-btn" data-r="-1" title="No, it didn't help" style="border:none;background:none;cursor:pointer;font-size:15px;padding:0"><svg class="wx-ic" viewBox="0 0 24 24"><path d="M7 13V4H4v9zM7 13l4 8a2 2 0 002-2v-4h5.5a2 2 0 002-2.3l-1.2-6A2 2 0 0017.3 5H7"/></svg></button>
     <span class="fb-thanks" style="display:none;color:var(--muted,#8a97a6)">Thanks for your feedback!</span>`;
   bubEl.appendChild(row);
   row.querySelectorAll('.fb-btn').forEach(btn=>{
@@ -5352,7 +5352,7 @@ function attachFeedback(bubEl, question, answerHtml){
 async function ask(q){
   if(q.trim().toLowerCase()==='/ticket'){ ticketForm('bug'); return; }
   const files=_assistantPendingFiles; _assistantPendingFiles=[]; renderAttachChips();
-  const shownQ=q || (files.length?('📎 '+files.map(f=>f.name).join(', ')):'');
+  const shownQ=q || (files.length?('Attached: '+files.map(f=>f.name).join(', ')):'');
   appendBub(shownQ,true);
   const typing=appendBub('WeAI is thinking…',false); typing.classList.add('typing');
   let ans;
@@ -5424,11 +5424,11 @@ async function answerQuestion(qraw){
     if(!cands||!cands.length) return `"${esc(pos.title)}" doesn't have candidates with a computed embedding yet to build a ranking. The position or its candidates may not have been processed by the semantic engine yet.`;
     const rows=cands.map((c,i)=>{
       const tags=[];
-      if(c.location_match) tags.push('📍 same city');
-      if(c.english_ok===true) tags.push('✅ English B2+');
-      else if(c.english_ok===false) tags.push('⚠️ English <B2');
-      if(c.salary_ok===true) tags.push('💰 within budget');
-      else if(c.salary_ok===false) tags.push('⚠️ over budget');
+      if(c.location_match) tags.push('Same city');
+      if(c.english_ok===true) tags.push('English B2+');
+      else if(c.english_ok===false) tags.push('English below B2');
+      if(c.salary_ok===true) tags.push('Within budget');
+      else if(c.salary_ok===false) tags.push('Over budget');
       const tagStr=tags.length?(' · '+tags.join(' · ')):'';
       return `${i+1}. <b>${esc(c.full_name||'—')}</b> — ${Math.round(c.similarity*100)}% match${tagStr} · ${esc(c.location||'—')} · ${esc(c.english_level||'—')}`;
     }).join('<br>');
@@ -6122,8 +6122,8 @@ async function scoreLoad(r){
       };
       const feedbackHtml=`<div class="mfeedback" style="display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">
         <span style="font-size:10.5px;color:var(--muted)">Good match?</span>
-        ${fbBtn('good','👍','Mark as a good match')}
-        ${fbBtn('bad','👎','Mark as a bad match')}
+        ${fbBtn('good','<svg class="wx-ic" viewBox="0 0 24 24"><path d="M7 11v9H4v-9zM7 11l4-8a2 2 0 012 2v4h5.5a2 2 0 012 2.3l-1.2 6a2 2 0 01-2 1.7H7"/></svg>','Mark as a good match')}
+        ${fbBtn('bad','<svg class="wx-ic" viewBox="0 0 24 24"><path d="M7 13V4H4v9zM7 13l4 8a2 2 0 002-2v-4h5.5a2 2 0 002-2.3l-1.2-6A2 2 0 0017.3 5H7"/></svg>','Mark as a bad match')}
       </div>`;
       return `<div style="border:1px solid var(--bd);border-radius:10px;padding:10px 12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px">
