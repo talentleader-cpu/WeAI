@@ -9071,5 +9071,54 @@ window.renderRecruitHub=async function(){
  window.H_TEAM='team';fill(tk)};
 })();
 </script>
+<script id="wx-sw-js">(function(){
+if(window.__wxSw) return; window.__wxSw=1;
+var SW=[
+ {k:'wtim_enabled',n:'WTIM',d:'the WTIM psychometric test',on:'Candidates for this position receive the WTIM link in their emails and reminders.',off:'Paused: no new WTIM links are sent for this position (welcome email, reminders or manual invites). Links already sent keep working.',def:true},
+ {k:'technical_assessment_enabled',n:'Technical assessment',d:'the technical assessment',on:'Candidates for this position receive the technical assessment in their emails and reminders.',off:'Paused: no new technical assessment links are sent for this position. Links already sent keep working.',def:true},
+ {k:'auto_assessment_enabled',n:'Excel assessment (automatic send)',d:'the automatic sending of the Excel assessment',on:'When a candidate completes WTIM and video and the combined score reaches the threshold, the Excel assessment is sent automatically, once per candidate.',off:'Nothing is sent automatically. You can still send the Excel assessment manually.',def:false}
+];
+function E(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+window.abTechSwitchHtml=function(){return ''};
+function confirmBox(title,msg,okLabel,danger){
+  return new Promise(function(res){
+    var o=document.createElement('div');
+    o.style.cssText='position:fixed;inset:0;background:rgba(7,35,58,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML='<div style="background:#fff;border-radius:16px;max-width:420px;width:100%;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,30,60,.35);font-family:inherit"><div style="font-size:16px;font-weight:700;color:#0f2233;margin-bottom:8px">'+E(title)+'</div><div style="font-size:13.5px;line-height:1.55;color:#41505f;margin-bottom:18px">'+msg+'</div><div style="display:flex;gap:10px;justify-content:flex-end"><button data-r="0" class="btn-ghost">Cancel</button><button data-r="1" class="btn-ghost" style="background:'+(danger?'#b23b22':'#1c7a57')+';color:#fff;border-color:transparent">'+E(okLabel)+'</button></div></div>';
+    function done(v){o.remove();res(v)}
+    o.addEventListener('click',function(e){var r=e.target&&e.target.getAttribute&&e.target.getAttribute('data-r'); if(r!==null&&r!==undefined) done(r==='1'); else if(e.target===o) done(false)});
+    document.body.appendChild(o);
+  });
+}
+async function paint(){
+  var host=document.querySelector('#abWrap .ab-wrap'); if(!host||typeof pwPos==='undefined'||!pwPos) return;
+  var old=document.getElementById('wxSw'); if(old) old.remove();
+  var row={}; try{ var r=await sb.from('positions').select('wtim_enabled,technical_assessment_enabled,auto_assessment_enabled').eq('id',pwPos.id).maybeSingle(); row=(r&&r.data)||{}; }catch(_){}
+  var h='<div id="wxSw" style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:6px 16px;margin-bottom:18px"><div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7a89;padding:10px 0 4px">SENDING CONTROLS FOR THIS POSITION</div>';
+  SW.forEach(function(s,i){
+    var v=row[s.k]; var on=(v===null||v===undefined)?s.def:!!v;
+    h+='<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 0;'+(i?'border-top:1px solid #eef2f6':'')+'"><div style="flex:1;min-width:230px"><div style="font-size:13.5px;font-weight:700;color:'+(on?'#1c7a57':'#b23b22')+'">'+E(s.n)+': '+(on?'ON':'OFF')+'</div><div style="font-size:12px;color:#6b7a89;margin-top:2px">'+E(on?s.on:s.off)+'</div></div><button class="btn-ghost'+(on?' danger':'')+'" data-sw="'+i+'" data-to="'+(on?0:1)+'">'+(on?'Turn off':'Turn on')+'</button></div>';
+  });
+  h+='</div>';
+  host.insertAdjacentHTML('afterbegin',h);
+  host.querySelectorAll('#wxSw button[data-sw]').forEach(function(b){
+    b.onclick=async function(){
+      var s=SW[+b.getAttribute('data-sw')], enable=b.getAttribute('data-to')==='1';
+      var ttl=(pwPos.title||'this position');
+      var ok=await confirmBox((enable?'Enable ':'Disable ')+s.n+'?','Are you sure you want to <b>'+(enable?'enable':'disable')+'</b> '+E(s.d)+' for <b>'+E(ttl)+'</b>?<br><span style="color:#6b7a89;font-size:12.5px">'+E(enable?s.on:s.off)+'</span>',enable?'Yes, enable':'Yes, disable',!enable);
+      if(!ok) return;
+      try{
+        var u={}; u[s.k]=enable; var r=await sb.from('positions').update(u).eq('id',pwPos.id);
+        if(r.error) throw r.error;
+        if(typeof toast==='function') toast(s.n+' '+(enable?'enabled':'disabled'));
+        paint();
+      }catch(e){ if(typeof toast==='function') toast('Could not update: '+(e.message||e)); }
+    };
+  });
+}
+var _o=window.abLoad;
+if(typeof _o==='function'){ window.abLoad=async function(){ var r=await _o.apply(this,arguments); try{ await paint(); }catch(_){} return r; }; }
+window.__wxSwPaint=paint;
+})();</script>
 </body>
 </html>
