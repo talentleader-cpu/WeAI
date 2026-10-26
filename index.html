@@ -9177,9 +9177,9 @@ async function paintLab(){
   var old=document.getElementById('wxLab'); if(old) old.remove();
   if(typeof userRole==='undefined'||(userRole!=='admin'&&userRole!=='lead')) return;
   var card=document.createElement('div'); card.id='wxLab';
-  card.style.cssText='background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:18px 20px;margin:18px 0';
+  card.className='wxh-card'; card.style.cssText='margin:20px 0 0';
   card.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7a89">PROCESS LAB</div><div style="font-size:12.5px;color:#6b7a89;margin-top:4px">Loading…</div>';
-  view.appendChild(card);
+  (view.querySelector('.wxh')||view).appendChild(card);
   var lab=[],outs=[];
   try{ var a=await Promise.all([sb.rpc('wx_process_lab'),sb.rpc('wx_hire_outcomes_list')]); lab=(a[0].data)||[]; outs=(a[1].data)||[]; }catch(e){ card.innerHTML='<div style="font-size:12.5px;color:#b23b22">Could not load the Process lab.</div>'; return; }
   var by={}; lab.forEach(function(r){by[r.method]=r});
