@@ -9120,5 +9120,86 @@ var _o=window.abLoad;
 if(typeof _o==='function'){ window.abLoad=async function(){ var r=await _o.apply(this,arguments); try{ await paint(); }catch(_){} return r; }; }
 window.__wxSwPaint=paint;
 })();</script>
+<script id="wx-lab-js">(function(){
+if(window.__wxLab) return; window.__wxLab=1;
+var M=[
+ {k:'cv_only',t:'A',n:'CV only',d:'No video interview and no WTIM. Candidates are screened from the CV.'},
+ {k:'cv_video',t:'B',n:'CV + video',d:'Video interview on, WTIM off.'},
+ {k:'cv_video_wtim',t:'C',n:'CV + video + WTIM',d:'Video interview and WTIM both on.'}
+];
+var LBL={baseline:'Before (since Aug 20)',cv_only:'A · CV only',cv_video:'B · CV + video',cv_video_wtim:'C · CV + video + WTIM'};
+function E(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function T(m){ if(typeof toast==='function') toast(m); }
+function confirmBox(title,msg,okLabel){
+  return new Promise(function(res){
+    var o=document.createElement('div');
+    o.style.cssText='position:fixed;inset:0;background:rgba(7,35,58,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+    o.innerHTML='<div style="background:#fff;border-radius:16px;max-width:440px;width:100%;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,30,60,.35)"><div style="font-size:16px;font-weight:700;color:#0f2233;margin-bottom:8px">'+E(title)+'</div><div style="font-size:13.5px;line-height:1.55;color:#41505f;margin-bottom:18px">'+msg+'</div><div style="display:flex;gap:10px;justify-content:flex-end"><button data-r="0" class="btn-ghost">Cancel</button><button data-r="1" class="btn-ghost" style="background:#0653A1;color:#fff;border-color:transparent">'+E(okLabel)+'</button></div></div>';
+    function done(v){o.remove();res(v)}
+    o.addEventListener('click',function(e){var r=e.target&&e.target.getAttribute&&e.target.getAttribute('data-r'); if(r!==null&&r!==undefined) done(r==='1'); else if(e.target===o) done(false)});
+    document.body.appendChild(o);
+  });
+}
+async function paintMethod(){
+  var host=document.querySelector('#abWrap .ab-wrap'); if(!host||typeof pwPos==='undefined'||!pwPos) return;
+  var old=document.getElementById('wxMethod'); if(old) old.remove();
+  var row={}; try{ var r=await sb.from('positions').select('screening_method,video_enabled,wtim_enabled').eq('id',pwPos.id).maybeSingle(); row=(r&&r.data)||{}; }catch(_){}
+  var cur=row.screening_method||null, vOn=row.video_enabled!==false;
+  var h='<div id="wxMethod" style="background:#fff;border:1px solid #e6ebf2;border-radius:14px;padding:6px 16px 14px;margin-bottom:14px"><div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7a89;padding:10px 0 8px">SCREENING METHOD (PROCESS TEST)</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+  M.forEach(function(m){ var on=cur===m.k; h+='<button class="btn-ghost" data-m="'+m.k+'" style="'+(on?'background:#0653A1;color:#fff;border-color:transparent':'')+'">'+m.t+' · '+E(m.n)+'</button>'; });
+  h+='</div><div style="font-size:12px;color:#6b7a89;margin-top:8px">'+(cur?E((M.filter(function(m){return m.k===cur})[0]||{}).d||''):'This position is not part of the process test. Pick a method to include it.')+' Changing the method sets the video and WTIM switches below.</div>';
+  h+='<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:12px;margin-top:12px;border-top:1px solid #eef2f6"><div style="flex:1;min-width:230px"><div style="font-size:13.5px;font-weight:700;color:'+(vOn?'#1c7a57':'#b23b22')+'">Video interview: '+(vOn?'ON':'OFF')+'</div><div style="font-size:12px;color:#6b7a89;margin-top:2px">'+(vOn?'Candidates receive the video interview link in their emails and reminders.':'Paused: no video interview links are sent for this position.')+'</div></div><button class="btn-ghost'+(vOn?' danger':'')+'" data-v="'+(vOn?0:1)+'">'+(vOn?'Turn off':'Turn on')+'</button></div></div>';
+  host.insertAdjacentHTML('afterbegin',h);
+  var box=document.getElementById('wxMethod');
+  box.querySelectorAll('button[data-m]').forEach(function(b){ b.onclick=async function(){
+    var k=b.getAttribute('data-m'); if(k===cur) return; var m=M.filter(function(x){return x.k===k})[0];
+    var ok=await confirmBox('Change screening method?','Are you sure you want to set <b>'+E(pwPos.title||'this position')+'</b> to <b>'+m.t+' · '+E(m.n)+'</b>?<br><span style="color:#6b7a89;font-size:12.5px">'+E(m.d)+' The video and WTIM switches for this position will be updated. Links already sent keep working.</span>','Yes, change');
+    if(!ok) return;
+    try{ var r=await sb.rpc('apply_screening_method',{p_position:pwPos.id,p_method:k}); if(r.error) throw r.error; T('Method set to '+m.t+' · '+m.n); await paintMethod(); if(window.__wxSwPaint) window.__wxSwPaint(); }catch(e){ T('Could not update: '+(e.message||e)); }
+  };});
+  box.querySelectorAll('button[data-v]').forEach(function(b){ b.onclick=async function(){
+    var en=b.getAttribute('data-v')==='1';
+    var ok=await confirmBox((en?'Enable':'Disable')+' video interview?','Are you sure you want to <b>'+(en?'enable':'disable')+'</b> the video interview for <b>'+E(pwPos.title||'this position')+'</b>?',en?'Yes, enable':'Yes, disable');
+    if(!ok) return;
+    try{ var r=await sb.from('positions').update({video_enabled:en}).eq('id',pwPos.id); if(r.error) throw r.error; T('Video interview '+(en?'enabled':'disabled')); paintMethod(); }catch(e){ T('Could not update: '+(e.message||e)); }
+  };});
+}
+var _o=window.abLoad;
+if(typeof _o==='function'){ window.abLoad=async function(){ var r=await _o.apply(this,arguments); try{ await paintMethod(); }catch(_){} return r; }; }
+window.__wxMethodPaint=paintMethod;
+function pct(a,b){ return b>0?Math.round(100*a/b)+'%':'—'; }
+function num(v){ return v==null?'—':v; }
+var OUT=[['met','Met'],['partial','Partial'],['not_met','Not met']];
+function sel(id,field,val){ return '<select data-o="'+id+'" data-f="'+field+'" style="font-size:12px;padding:3px 6px;border:1px solid #dde5ec;border-radius:7px"><option value="">—</option>'+OUT.map(function(o){return '<option value="'+o[0]+'"'+(val===o[0]?' selected':'')+'>'+o[1]+'</option>'}).join('')+'</select>'; }
+async function paintLab(){
+  var view=document.getElementById('view'); if(!view) return;
+  var old=document.getElementById('wxLab'); if(old) old.remove();
+  if(typeof userRole==='undefined'||(userRole!=='admin'&&userRole!=='lead')) return;
+  var card=document.createElement('div'); card.id='wxLab';
+  card.style.cssText='background:#fff;border:1px solid #e6ebf2;border-radius:16px;padding:18px 20px;margin:18px 0';
+  card.innerHTML='<div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7a89">PROCESS LAB</div><div style="font-size:12.5px;color:#6b7a89;margin-top:4px">Loading…</div>';
+  view.appendChild(card);
+  var lab=[],outs=[];
+  try{ var a=await Promise.all([sb.rpc('wx_process_lab'),sb.rpc('wx_hire_outcomes_list')]); lab=(a[0].data)||[]; outs=(a[1].data)||[]; }catch(e){ card.innerHTML='<div style="font-size:12.5px;color:#b23b22">Could not load the Process lab.</div>'; return; }
+  var by={}; lab.forEach(function(r){by[r.method]=r});
+  var order=['baseline','cv_only','cv_video','cv_video_wtim'];
+  var h='<div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap"><div><div style="font-size:11px;font-weight:700;letter-spacing:.08em;color:#6b7a89">PROCESS LAB</div><div style="font-size:18px;font-weight:700;color:#0f2233;margin-top:2px">Which screening method works best?</div></div><div style="font-size:12px;color:#6b7a89">New positions are assigned a method in rotation. Change it in each position, Assessment tab.</div></div>';
+  h+='<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px;min-width:640px"><thead><tr style="text-align:left;color:#6b7a89;font-size:11.5px"><th style="padding:6px 8px">Method</th><th>Positions</th><th>Filled</th><th>Days to 1st presented</th><th>Days to fill</th><th>Presented</th><th>Client interview</th><th>Hires</th></tr></thead><tbody>';
+  order.forEach(function(k){ var r=by[k]||{positions:0,filled:0,presented:0,interviews:0,hires:0}; h+='<tr style="border-top:1px solid #eef2f6'+(k==='baseline'?';color:#6b7a89':'')+'"><td style="padding:9px 8px;font-weight:600">'+E(LBL[k])+'</td><td>'+(r.positions||0)+'</td><td>'+(r.filled||0)+'</td><td>'+num(r.days_to_first_presented)+'</td><td>'+num(r.days_to_fill)+'</td><td>'+(r.presented||0)+'</td><td>'+pct(r.interviews,r.presented)+'</td><td>'+(r.hires||0)+'</td></tr>'; });
+  h+='</tbody></table></div><div style="font-size:12px;color:#6b7a89;margin-top:10px;line-height:1.5">Early numbers: with few positions per method they show direction, not a verdict. "Before" covers positions created since Aug 20, when stage history started to be reliable; older hires were imported in bulk and are not used for timing.</div>';
+  h+='<details style="margin-top:14px"><summary style="cursor:pointer;font-size:13px;font-weight:600;color:#0653A1">Hire outcomes from People (30 / 90 / 365 days)</summary><div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:620px"><thead><tr style="text-align:left;color:#6b7a89;font-size:11.5px"><th style="padding:6px 8px">Candidate</th><th>Position</th><th>Method</th><th>30 d</th><th>90 d</th><th>365 d</th></tr></thead><tbody>';
+  if(!outs.length) h+='<tr><td colspan="6" style="padding:10px 8px;color:#6b7a89">No hires yet.</td></tr>';
+  outs.forEach(function(o){ h+='<tr style="border-top:1px solid #eef2f6"><td style="padding:7px 8px">'+E(o.candidate)+'</td><td>'+E(o.position)+'</td><td>'+E(LBL[o.method]||o.method)+'</td><td>'+sel(o.application_id,'d30',o.d30)+'</td><td>'+sel(o.application_id,'d90',o.d90)+'</td><td>'+sel(o.application_id,'d365',o.d365)+'</td></tr>'; });
+  h+='</tbody></table></div></details>';
+  card.innerHTML=h;
+  card.querySelectorAll('select[data-o]').forEach(function(s){ s.onchange=async function(){
+    var id=s.getAttribute('data-o'), row={application_id:id,updated_at:new Date().toISOString()};
+    card.querySelectorAll('select[data-o="'+id+'"]').forEach(function(x){ row[x.getAttribute('data-f')]=x.value||null; });
+    try{ if(typeof currentUser!=='undefined'&&currentUser&&currentUser.id) row.updated_by=currentUser.id; var r=await sb.from('hire_outcomes').upsert(row); if(r.error) throw r.error; T('Outcome saved'); }catch(e){ T('Could not save: '+(e.message||e)); }
+  };});
+}
+var _h=window.renderRecruitHub;
+if(typeof _h==='function'){ window.renderRecruitHub=async function(){ var r=await _h.apply(this,arguments); try{ await paintLab(); }catch(_){} return r; }; }
+})();</script>
 </body>
 </html>
