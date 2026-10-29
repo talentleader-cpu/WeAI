@@ -5966,7 +5966,7 @@ async function openJob(id, from){
 }
 async function pwLoadApps(){
   const {data}=await sb.from('applications')
-    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,careers_applied_at,client_visible,wtim_pdf_url,assessment_pdf_url,matrix_pdf_url,video_interview_url, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url,comments,source,tags,import_data,applied_at)')
+    .select('id,position_id,current_stage,stage,stage_remark,created_at,owner_id,careers_applied_at,client_visible,wtim_pdf_url,assessment_pdf_url,matrix_pdf_url,video_interview_url,wexpand_cv_url,wexpand_cv_source, candidates(id,full_name,email,phone,english_level,experience_years,location,skills,resume_url,wexpand_cv_url,raw_cv_pdf_url,salary_expectation,avatar_url,linkedin_url,comments,source,tags,import_data,applied_at)')
     .eq('position_id',pwPos.id).order('created_at',{ascending:false});
   pwApps=data||[];
   pwVideoEmails=new Set();
@@ -8192,7 +8192,7 @@ function pwPreviewRender(){
           ${(s.has_wtim||a.wtim_pdf_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">WTIM ✓</span>':''}
           ${(s.has_assessment||a.assessment_pdf_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Assessment ✓</span>':''}
           ${(s.has_evaluation_matrix||a.matrix_pdf_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Eval. Matrix ✓</span>':''}
-          ${c.wexpand_cv_url?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Wexpand CV ✓</span>':''}
+          ${(a.wexpand_cv_url||c.wexpand_cv_url)?'<span class="chip" style="background:#e4f3ec;color:#1c7a57">Wexpand CV ✓</span>':''}
         </div>
         ${c.linkedin_url?`<a href="${esc(c.linkedin_url)}" target="_blank" class="pwp-li">LinkedIn profile ↗</a>`:''}
       </div>
@@ -9202,5 +9202,159 @@ async function paintLab(){
 var _h=window.renderRecruitHub;
 if(typeof _h==='function'){ window.renderRecruitHub=async function(){ var r=await _h.apply(this,arguments); try{ await paintLab(); }catch(_){} return r; }; }
 })();</script>
+<script id="wx-cv-js">
+(function(){
+if(window.__wxCv) return; window.__wxCv=1;
+function E(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function T(m){ if(typeof toast==='function') toast(m); }
+function modal(inner){
+  var o=document.createElement('div');
+  o.style.cssText='position:fixed;inset:0;background:rgba(7,35,58,.45);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px';
+  o.innerHTML='<div style="background:#fff;border-radius:16px;max-width:460px;width:100%;padding:22px 22px 18px;box-shadow:0 24px 60px rgba(0,30,60,.35);font-family:inherit">'+inner+'</div>';
+  document.body.appendChild(o); return o;
+}
+
+/* ---------- 1) Renderer: RELEVANT EXPERIENCE first, ADDITIONAL EXPERIENCE after ---------- */
+var _node=window.wxCvNode;
+if(typeof _node==='function'){
+  window.wxCvNode=function(d){
+    d=d||{};
+    var exp=Array.isArray(d.experience)?d.experience:[];
+    var rel=exp.filter(function(e){return e&&e.relevance==='relevant'});
+    var add=exp.filter(function(e){return e&&e.relevance==='additional'});
+    var tagged=exp.some(function(e){return e&&(e.relevance==='relevant'||e.relevance==='additional')});
+    if(!tagged||!rel.length&&!add.length) return _node(d);
+    // all additional (no relevant job): keep one section, titled ADDITIONAL
+    var d1=Object.assign({},d,{experience:rel.length?rel:add});
+    var node=_node(d1);
+    var secs=[].slice.call(node.querySelectorAll('.sec'));
+    var expSec=secs.filter(function(s){return /PROFESSIONAL EXPERIENCE/i.test(s.textContent)})[0];
+    if(!expSec) return node;
+    expSec.textContent=rel.length?'RELEVANT EXPERIENCE':'PROFESSIONAL EXPERIENCE';
+    if(rel.length&&add.length){
+      var n2=_node(Object.assign({},d,{experience:add,overview:[],education:[],projects:[],skills:[],technical:[],languages:[]}));
+      var s2=[].slice.call(n2.querySelectorAll('.sec'))[0];
+      if(s2){
+        s2.textContent='ADDITIONAL EXPERIENCE';
+        var frag=[]; for(var n=s2;n;n=n.nextSibling) frag.push(n);
+        // insert right after the last element that belongs to the relevant section
+        var ref=expSec.nextSibling, last=expSec;
+        while(ref&&!(ref.classList&&ref.classList.contains('sec'))){ last=ref; ref=ref.nextSibling; }
+        frag.forEach(function(el){ node.insertBefore(el,ref||null); });
+      }
+    }
+    return node;
+  };
+}
+
+/* ---------- 2) Convert / regenerate for ONE position ---------- */
+function sel(){ return typeof pwApps!=='undefined'&&typeof pwPreviewIdx!=='undefined'&&pwPreviewIdx>=0?pwApps[pwPreviewIdx]:null; }
+async function pickApplication(candId){
+  var a=sel();
+  if(a&&a.candidates&&a.candidates.id===candId) return {id:a.id,position_id:a.position_id};
+  var r=await sb.from('applications').select('id,position_id,created_at,positions(title)').eq('candidate_id',candId).order('created_at',{ascending:false}).limit(30);
+  var list=(r&&r.data)||[];
+  if(list.length<=1) return list[0]||null;
+  return new Promise(function(res){
+    var opts=list.map(function(x,i){return '<option value="'+i+'">'+E((x.positions&&x.positions.title)||'Position')+'</option>'}).join('');
+    var o=modal('<div style="font-size:16px;font-weight:700;color:#0f2233;margin-bottom:8px">Which position is this CV for?</div><div style="font-size:13.5px;line-height:1.55;color:#41505f;margin-bottom:12px">The Wexpand CV is written for one position. Pick the one you are sending this candidate to.</div><select id="wxCvPick" style="width:100%;padding:9px 10px;border:1px solid #dde5ec;border-radius:10px;font-size:14px;margin-bottom:16px">'+opts+'</select><div style="display:flex;gap:10px;justify-content:flex-end"><button data-r="0" class="btn-ghost">Cancel</button><button data-r="1" class="btn-ghost" style="background:#0653A1;color:#fff;border-color:transparent">Generate</button></div>');
+    o.addEventListener('click',function(e){var v=e.target&&e.target.getAttribute&&e.target.getAttribute('data-r'); if(v==='1'){ var i=+o.querySelector('#wxCvPick').value; o.remove(); res(list[i]); } else if(v==='0'||e.target===o){ o.remove(); res(false); }});
+  });
+}
+window.cvConvert=async function(candId,btn,appIdArg){
+  var orig=btn?btn.innerHTML:''; function busy(on,t){ if(!btn) return; btn.disabled=!!on; btn.innerHTML=on?(t||'Converting…'):orig; }
+  try{
+    busy(true);
+    var cr=await sb.from('candidates').select('id,full_name,raw_cv_pdf_url,resume_url').eq('id',candId).maybeSingle();
+    var cand=cr&&cr.data; var src=cand&&(cand.raw_cv_pdf_url||cand.resume_url);
+    if(!src){ T('This candidate does not have a real resume (PDF) imported yet — cannot convert yet.'); return; }
+    var app=null;
+    if(appIdArg){ var ar=await sb.from('applications').select('id,position_id').eq('id',appIdArg).maybeSingle(); app=ar&&ar.data; }
+    else { busy(false); app=await pickApplication(candId); if(app===false) return; busy(true); }
+    var pos=null;
+    if(app&&app.position_id){ var pr=await sb.from('positions').select('id,title,job_description,job_description_en,jd_raw').eq('id',app.position_id).maybeSingle(); pos=pr&&pr.data; }
+    var text=''; try{ var resp=await fetch(src); var blob=await resp.blob(); text=await jdReadPdf(blob); }catch(e){ T('Could not read the original resume.'); return; }
+    if(!(text||'').trim()){ T('The resume has no readable text (is it a scanned image?).'); return; }
+    var position=pos?{title:pos.title||'',description:(pos.job_description_en||pos.job_description||pos.jd_raw||'')}:null;
+    var fr=await sb.functions.invoke('convert-cv',{body:{cv_text:text,name:cand.full_name,target_role:(pos&&pos.title)||'',position:position}});
+    if(fr.error){ var det=fr.error.message||'Function error'; try{ if(fr.error.context&&fr.error.context.clone){ var b=await fr.error.context.clone().json(); if(b&&b.error) det=b.error; } }catch(_){} T('Could not convert: '+det); return; }
+    var data=fr.data; if(data&&data.error){ T('Could not convert: '+data.error); return; }
+    var pdfBlob=await wxCvBuildPdfBlob(data);
+    var savedUrl=null;
+    try{
+      if(app&&app.id){
+        var path='wexpand-cv/'+candId+'-'+(app.position_id||'general')+'.pdf';
+        var up=await sb.storage.from('careers-docs').upload(path,pdfBlob,{contentType:'application/pdf',upsert:true}); if(up.error) throw up.error;
+        savedUrl=sb.storage.from('careers-docs').getPublicUrl(path).data.publicUrl+'?v='+Date.now();
+        var row={wexpand_cv_url:savedUrl,wexpand_cv_source:'auto',wexpand_cv_updated_at:new Date().toISOString()};
+        if(typeof currentUser!=='undefined'&&currentUser&&currentUser.id) row.wexpand_cv_updated_by=currentUser.id;
+        var ur=await sb.from('applications').update(row).eq('id',app.id); if(ur.error) throw ur.error;
+        if(typeof pwApps!=='undefined'){ var pa=pwApps.find(function(x){return x.id===app.id}); if(pa){ pa.wexpand_cv_url=savedUrl; pa.wexpand_cv_source='auto'; } }
+      } else { savedUrl=await cvPersistWexpand(pdfBlob,candId); }
+      T('✓ Wexpand CV saved for '+((pos&&pos.title)||'this candidate')+((data&&data.tailoring_notes)?' — '+data.tailoring_notes:''));
+      var cur=sel(); if(cur){ try{ pwDocsRender(cur); }catch(_){} }
+    }catch(se){ T('Converted, but could not save: '+(se.message||se)); }
+    if(typeof cvPreview==='function') cvPreview(pdfBlob,candId,cand.full_name||'',savedUrl);
+  }catch(e){ T('Error: '+(e.message||e)); }
+  finally{ busy(false); }
+};
+
+/* ---------- 3) Upload your own Wexpand-format PDF for this position ---------- */
+window.wxCvUpload=function(appId){
+  var a=(typeof pwApps!=='undefined')&&pwApps.find(function(x){return x.id===appId}); if(!a) return;
+  var inp=document.createElement('input'); inp.type='file'; inp.accept='application/pdf';
+  inp.onchange=async function(){
+    var f=inp.files&&inp.files[0]; if(!f) return;
+    if(!/pdf$/i.test(f.type||'')&&!/\.pdf$/i.test(f.name)){ T('Please choose a PDF file.'); return; }
+    if(f.size>25*1024*1024){ T('The PDF is larger than 25 MB.'); return; }
+    var c=a.candidates||{};
+    try{
+      T('Uploading…');
+      var path='wexpand-cv/'+c.id+'-'+(a.position_id||'general')+'-custom-'+Date.now()+'.pdf';
+      var up=await sb.storage.from('careers-docs').upload(path,f,{contentType:'application/pdf',upsert:true}); if(up.error) throw up.error;
+      var url=sb.storage.from('careers-docs').getPublicUrl(path).data.publicUrl;
+      var row={wexpand_cv_url:url,wexpand_cv_source:'uploaded',wexpand_cv_updated_at:new Date().toISOString()};
+      if(typeof currentUser!=='undefined'&&currentUser&&currentUser.id) row.wexpand_cv_updated_by=currentUser.id;
+      var ur=await sb.from('applications').update(row).eq('id',a.id); if(ur.error) throw ur.error;
+      a.wexpand_cv_url=url; a.wexpand_cv_source='uploaded';
+      T('✓ Your Wexpand CV was saved for this position'); pwDocsRender(a);
+      try{ if(typeof pwPreviewRender==='function') pwPreviewRender(); }catch(_){}
+    }catch(e){ T('Could not upload: '+(e.message||e)); }
+  };
+  inp.click();
+};
+window.wxCvRemove=async function(appId){
+  var a=(typeof pwApps!=='undefined')&&pwApps.find(function(x){return x.id===appId}); if(!a) return;
+  var o=modal('<div style="font-size:16px;font-weight:700;color:#0f2233;margin-bottom:8px">Remove this Wexpand CV?</div><div style="font-size:13.5px;line-height:1.55;color:#41505f;margin-bottom:18px">Are you sure you want to remove the Wexpand CV for this position? The client will see the candidate\'s original resume until you generate or upload a new one.</div><div style="display:flex;gap:10px;justify-content:flex-end"><button data-r="0" class="btn-ghost">Cancel</button><button data-r="1" class="btn-ghost" style="background:#b23b22;color:#fff;border-color:transparent">Yes, remove</button></div>');
+  o.addEventListener('click',async function(e){
+    var v=e.target&&e.target.getAttribute&&e.target.getAttribute('data-r');
+    if(v==='1'){ o.remove(); try{ var r=await sb.from('applications').update({wexpand_cv_url:null,wexpand_cv_source:null,wexpand_cv_updated_at:new Date().toISOString()}).eq('id',appId); if(r.error) throw r.error; a.wexpand_cv_url=null; a.wexpand_cv_source=null; T('Wexpand CV removed'); pwDocsRender(a); }catch(er){ T('Could not remove: '+(er.message||er)); } }
+    else if(v==='0'||e.target===o){ o.remove(); }
+  });
+};
+
+/* ---------- 4) Documents panel: CV row is now per position ---------- */
+var _docs=window.pwDocsRender;
+if(typeof _docs==='function'){
+  window.pwDocsRender=function(a){
+    var r=_docs.apply(this,arguments);
+    try{
+      var box=document.getElementById('pwpDocs'); if(!box||!a) return r;
+      var rows=[].slice.call(box.querySelectorAll('.pwdoc'));
+      var old=rows.filter(function(x){var d=x.querySelector('.dn'); return d&&/Wexpand CV/i.test(d.textContent)})[0];
+      var c=a.candidates||{}; var mine=a.wexpand_cv_url, legacy=c.wexpand_cv_url, url=mine||legacy;
+      var st=mine?(a.wexpand_cv_source==='uploaded'?'Uploaded by recruiter ✓':'Made for this position ✓'):(legacy?'Older general version (not for this position)':'Not generated yet');
+      var h='<div class="pwdoc" id="wxCvRow"><span class="dn">Wexpand CV</span><span class="ds '+(mine?'ok':'')+'">'+E(st)+'</span>'
+        +(url?'<a class="btn-ghost" href="'+E(url)+'" target="_blank" rel="noopener">View PDF</a>':'')
+        +'<button class="btn-ghost" onclick="cvConvert(\''+E(c.id)+'\',this,\''+E(a.id)+'\')" title="Rewrites the CV for this position using its job description">'+(mine?'Regenerate for this position':'Generate for this position')+'</button>'
+        +'<button class="btn-ghost" onclick="wxCvUpload(\''+E(a.id)+'\')">Upload my own PDF</button>'
+        +(mine?'<button class="btn-ghost" onclick="wxCvRemove(\''+E(a.id)+'\')">Remove</button>':'')+'</div>';
+      if(old) old.outerHTML=h; else box.insertAdjacentHTML('beforeend',h);
+    }catch(_){}
+    return r;
+  };
+}
+})();
+</script>
 </body>
 </html>
