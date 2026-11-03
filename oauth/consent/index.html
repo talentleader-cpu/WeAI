@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Autorizar acceso a WeAI</title>
+<style>
+  :root{--bg:#f4f6fb;--card:#fff;--ink:#0f1b3d;--mut:#5b6785;--line:#dde3f0;--blue:#1f4fd8;--navy:#0b1f5c;--orange:#F58220}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:grid;place-items:center;padding:16px;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+  .card{width:100%;max-width:440px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:28px;box-shadow:0 10px 30px rgba(15,27,61,.08)}
+  .logo{font-weight:800;font-size:20px;color:var(--navy);margin-bottom:14px}.logo b{color:var(--orange)}
+  h1{font-size:20px;margin:0 0 6px}
+  p{margin:0 0 12px;color:var(--mut)}
+  .box{background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:14px 0;font-size:14px}
+  .box ul{margin:6px 0 0;padding-left:18px}
+  .box li{margin:3px 0}
+  .row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+  button,a.btn{flex:1;min-width:130px;padding:11px 14px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);font:600 15px inherit;cursor:pointer;text-align:center;text-decoration:none}
+  button.ok{background:var(--blue);border-color:var(--blue);color:#fff}
+  button:disabled{opacity:.6;cursor:wait}
+  .err{color:#b42318}
+  small{color:var(--mut)}
+</style>
+</head>
+<body>
+<main class="card" id="root"><div class="logo">We<b>AI</b></div><p>Cargando…</p></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.99.3/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  var SB_URL='https://eabnfggpviymtrhvnimn.supabase.co';
+  var KEY='sb_publishable_niSJTXf47tYWes-3f-57fg_5vEnwRye';
+  var root=document.getElementById('root');
+  var sb=supabase.createClient(SB_URL,KEY);
+  var authId=new URLSearchParams(location.search).get('authorization_id');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function show(html){root.innerHTML='<div class="logo">We<b>AI</b></div>'+html}
+  var SCOPE_TXT={openid:'Confirmar quién eres',email:'Ver tu correo',profile:'Ver tu nombre',phone:'Ver tu teléfono'};
+
+  async function init(){
+    if(!authId){show('<h1>Falta información</h1><p class="err">Este enlace no trae una solicitud de autorización. Vuelve a conectar desde Claude.</p>');return}
+    var s=await sb.auth.getSession();
+    if(!s.data.session){
+      show('<h1>Inicia sesión en WeAI</h1><p>Para autorizar a Claude necesitas tener sesión abierta en WeAI.</p>'+
+        '<div class="row"><a class="btn" href="/" target="_blank" rel="noopener">Abrir WeAI</a><button class="ok" id="retry">Ya inicié sesión</button></div>'+
+        '<p style="margin-top:12px"><small>Inicia sesión en la pestaña nueva y regresa aquí.</small></p>');
+      document.getElementById('retry').onclick=function(){location.reload()};
+      return;
+    }
+    var r=await sb.auth.oauth.getAuthorizationDetails(authId);
+    if(r.error||!r.data){show('<h1>No se pudo cargar</h1><p class="err">'+esc(r.error&&r.error.message||'Solicitud inválida o vencida')+'</p><p><small>Vuelve a intentar la conexión desde Claude.</small></p>');return}
+    var d=r.data;
+    if(!d.authorization_id&&d.redirect_url){location.replace(d.redirect_url);return}
+    var scopes=(d.scope||'').split(' ').filter(Boolean);
+    var email=s.data.session.user.email;
+    show('<h1>¿Autorizar a '+esc(d.client&&d.client.name||'esta aplicación')+'?</h1>'+
+      '<p>Entrarás como <b>'+esc(email)+'</b>.</p>'+
+      '<div class="box"><b>Esta aplicación podrá, con tus mismos permisos en WeAI:</b><ul>'+
+        '<li>Buscar y ver candidatos y posiciones</li>'+
+        '<li>Mover candidatos de stage (sin enviar correos)</li>'+
+        '<li>Agregar notas a candidatos</li></ul>'+
+        (scopes.length?'<p style="margin:10px 0 0"><small>Permisos técnicos: '+scopes.map(function(x){return esc(SCOPE_TXT[x]||x)}).join(', ')+'</small></p>':'')+
+      '</div>'+
+      '<p><small>Solo autoriza si tú iniciaste esta conexión desde Claude. Puedes revocar el acceso cuando quieras.</small></p>'+
+      '<div class="row"><button id="deny">Cancelar</button><button class="ok" id="ok">Autorizar</button></div>'+
+      '<p id="msg" class="err"></p>');
+    function decide(fn){
+      return async function(){
+        document.getElementById('ok').disabled=true;document.getElementById('deny').disabled=true;
+        var x=await fn.call(sb.auth.oauth,authId);
+        if(x.error||!x.data||!x.data.redirect_url){document.getElementById('msg').textContent=(x.error&&x.error.message)||'No se pudo completar.';document.getElementById('ok').disabled=false;document.getElementById('deny').disabled=false;return}
+        location.href=x.data.redirect_url;
+      }
+    }
+    document.getElementById('ok').onclick=decide(sb.auth.oauth.approveAuthorization);
+    document.getElementById('deny').onclick=decide(sb.auth.oauth.denyAuthorization);
+  }
+  init().catch(function(e){show('<h1>Error</h1><p class="err">'+esc(e.message||e)+'</p>')});
+})();
+</script>
+</body>
+</html>
