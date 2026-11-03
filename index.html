@@ -2611,6 +2611,7 @@ function renderAIHub(){
         <h3 style="color:var(--navy);margin:0 0 4px">Automations</h3>
         <p class="muted" style="margin:0 0 14px;font-size:13px">What already runs on its own inside WeAI, and when. ${userRole==='admin'?'You can turn a scheduled automation on or off here.':'Ask an admin if one of these needs to be turned on or off.'}</p>
         <div id="autoList">Loading…</div>
+        <div id="autoPositions" style="margin-top:22px"></div>
         <div style="margin-top:22px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff">
           <img src="training/img/12_automations.jpg" alt="Diagram: what happens automatically when a candidate applies" style="display:block;width:100%">
         </div>
@@ -2677,7 +2678,32 @@ async function renderAssistantHealth(){
   }
 }
 function fmtNum(n){ return n==null?'—':Number(n).toLocaleString('en-US'); }
-async function renderAutomationsList(){
+async function renderPositionAutomations(){
+  const box=document.getElementById('autoPositions'); if(!box) return;
+  const {data,error}=await sb.from('positions').select('id,title,status,video_enabled,clients(name)').in('status',['open','on_hold']).order('title');
+  if(error||!data){ box.innerHTML='<p class="muted" style="font-size:13px">Could not load the positions.</p>'; return; }
+  const canEdit=['admin','lead','recruiter'].includes(userRole);
+  box.innerHTML='<h4 style="color:var(--navy);margin:0 0 4px;font-size:15px">Per-position automations</h4>'
+    +'<p class="muted" style="margin:0 0 12px;font-size:13px">Turn the automatic video-interview invites, reminders and stage moves on or off for each open position.'+(canEdit?'':' Ask a recruiter or admin to change these.')+'</p>'
+    +'<div style="display:flex;flex-direction:column;gap:8px">'
+    +data.map(function(p){
+      const on=p.video_enabled!==false;
+      return '<div style="display:flex;align-items:center;gap:12px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:#fff">'
+        +'<div style="flex:1"><div style="font-weight:600;font-size:13.5px;color:var(--navy)">'+esc(p.title)+'</div>'
+        +'<div class="muted" style="font-size:12px">'+esc((p.clients&&p.clients.name)||'')+(p.status==='on_hold'?' · On hold':'')+' · Video interview automation: <b>'+(on?'On':'Off')+'</b></div></div>'
+        +(canEdit?'<button class="btn-ghost" style="font-size:12px;padding:6px 10px" onclick="togglePositionVideo(\''+p.id+'\','+(!on)+')">'+(on?'Turn off':'Turn on')+'</button>':'')
+        +'</div>';
+    }).join('')+'</div>';
+}
+async function togglePositionVideo(id,en){
+  const ok=await confirmBox(en?'Turn on video interview automation?':'Turn off video interview automation?', en?'Applicants who finish their steps will get the video-interview email and reminders again.':'No more video-interview emails, reminders or automatic stage moves for this position. Candidates already in review stay where they are.', en?'Yes, turn on':'Yes, turn off');
+  if(!ok) return;
+  const {error}=await sb.from('positions').update({video_enabled:en}).eq('id',id);
+  if(error){ T('Could not update: '+error.message); return; }
+  T('Video interview automation '+(en?'on':'off'));
+  renderPositionAutomations();
+}
+async function renderAutomationsList(){ renderPositionAutomations();
   const box=document.getElementById('autoList'); if(!box) return;
   const {data,error}=await sb.rpc('weai_list_automations');
   if(error||!data){ box.innerHTML='<p class="muted" style="font-size:13px">Could not load the automations.</p>'; return; }
