@@ -2684,36 +2684,39 @@ async function renderRecruitingAgents(){
   const {data,error}=await sb.rpc('recruiting_agents_overview');
   if(error||!data||!data.ok){ box.innerHTML='<p class="muted" style="font-size:13px">Could not load the agents.</p>'; return; }
   const isAdmin=userRole==='admin';
-  const META={screener:{name:'Screener',tag:'Reads every new applicant',desc:'Compares each new Careers applicant with the position and prepares a fit summary: recommendation, strengths, concerns and questions for the recruiter. It never moves a candidate or sends an email; a person reviews every draft.',cad:'Every hour'}};
-  const soon=[{name:'Follow-up agent',tag:'Keeps candidates moving',desc:'Drafts a personal nudge for candidates who stalled in a stage, for the recruiter to send.'},{name:'Sourcing agent',tag:'Finds new candidates',desc:'Looks for new candidates for open positions and drops the best ones in for review.'}];
+  const META={
+    screener:{name:'Screener',tag:'Reads every new applicant',desc:'Compares each new Careers applicant with the position and prepares a fit summary: recommendation, strengths, concerns and questions for the recruiter.',cad:'Every hour',unit:'applicants',on:'It will start preparing a summary for each new applicant every hour, within the daily limit and the monthly budget.'},
+    followup:{name:'Follow-up agent',tag:'Keeps candidates moving',desc:'Finds candidates whose process has been stalled for days and drafts the next step: a personal message to send, a nudge for the client, or a polite close-out.',cad:'Weekdays, 8 am',unit:'candidates',on:'It will draft the next step for stalled candidates every weekday morning, within the daily limit and the monthly budget. You send the messages yourself.'},
+    sourcing:{name:'Sourcing agent',tag:'Finds new candidates',desc:'For each open position it looks in the WeAI talent base for people who have not applied yet, says who is worth contacting and drafts the first message.',cad:'Weekdays, 9:30 am',unit:'positions',on:'It will look for new candidates for the open positions every weekday, within the daily limit and the monthly budget. Positions with automation off are skipped.'}
+  };
+  window.__recMeta=META;
   const pct=data.cap_usd>0?Math.min(100,Math.round(data.spend_usd/data.cap_usd*100)):0;
   const when=s=>s?new Date(s).toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'never';
   const card=(inner)=>'<div style="background:#fff;border:1.5px solid #cfe3ee;border-radius:18px;padding:18px 20px;display:flex;flex-direction:column;gap:8px">'+inner+'</div>';
   const badge=(t,bg,fg)=>'<span style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:'+bg+';color:'+fg+'">'+t+'</span>';
-  const cards=data.agents.map(function(a){
-    const m=META[a.key]||{name:a.key,tag:'',desc:'',cad:''};
+  const order=['screener','followup','sourcing'];
+  const agents=data.agents.slice().sort((a,b)=>order.indexOf(a.key)-order.indexOf(b.key));
+  const cards=agents.map(function(a){
+    const m=META[a.key]||{name:a.key,tag:'',desc:'',cad:'',unit:''};
     const on=!!a.enabled;
     return card('<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:19px;font-weight:700;color:var(--navy)">'+esc(m.name)+'</div>'+(on?badge('Active','#e3f6ea','#1b6b3a'):badge('Paused','#fbeee3','#8a4a1c'))+'</div>'
       +'<div style="font-weight:600;font-size:13.5px;color:var(--blue)">'+esc(m.tag)+'</div>'
-      +'<div class="muted" style="font-size:13px;line-height:1.5">'+esc(m.desc)+'</div>'
-      +'<div class="muted" style="font-size:12.5px">'+esc(m.cad)+' · up to '+a.daily_limit+' a day · used today: '+a.used_today+'</div>'
+      +'<div class="muted" style="font-size:13px;line-height:1.5">'+esc(m.desc)+' Nothing is sent or moved on its own; a person reviews every draft.</div>'
+      +'<div class="muted" style="font-size:12.5px">'+esc(m.cad)+' · up to '+a.daily_limit+' '+esc(m.unit)+' a day · used today: '+a.used_today+'</div>'
       +'<div class="muted" style="font-size:12.5px">Last run: '+when(a.last_run_at)+(a.last_result?' · '+esc(a.last_result):'')+'</div>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'
       +(isAdmin?'<button class="btn-primary" style="border-radius:999px;padding:8px 18px;font-size:13px" onclick="recAgentToggle(\''+a.key+'\','+(!on)+')">'+(on?'Turn off':'Turn on')+'</button>':'')
       +'<button class="btn-ghost" style="border-radius:999px;padding:8px 16px;font-size:13px" onclick="recAgentDrafts(\''+a.key+'\')">Review drafts ('+a.pending+')</button>'
       +'</div>');
-  }).join('')+soon.map(function(s){
-    return card('<div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font-size:19px;font-weight:700;color:var(--navy)">'+esc(s.name)+'</div>'+badge('Coming soon','#eef1f4','#5a6b78')+'</div>'
-      +'<div style="font-weight:600;font-size:13.5px;color:var(--blue)">'+esc(s.tag)+'</div>'
-      +'<div class="muted" style="font-size:13px;line-height:1.5">'+esc(s.desc)+'</div>');
   }).join('');
   box.innerHTML='<h3 style="color:var(--navy);margin:0 0 4px">Recruiting agents</h3>'
     +'<p class="muted" style="margin:0 0 12px;font-size:13px">AI agents that prepare work for the recruiting team. Nothing is sent or moved on its own: every result is a draft that a person reviews.'+(isAdmin?'':' Ask an admin to turn an agent on or off.')+'</p>'
-    +'<div style="border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:#fff;margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><b style="color:var(--navy)">Budget this month</b><span>$'+Number(data.spend_usd).toFixed(2)+' of $'+Number(data.cap_usd).toFixed(0)+'</span></div><div style="height:7px;background:#e9eef3;border-radius:99px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(pct>=90?'#c0392b':'var(--blue)')+'"></div></div><div class="muted" style="font-size:12px;margin-top:5px">When the budget is reached the agents stop on their own until next month.</div></div>'
+    +'<div style="border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:#fff;margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px"><b style="color:var(--navy)">Budget this month (all recruiting agents)</b><span>$'+Number(data.spend_usd).toFixed(2)+' of $'+Number(data.cap_usd).toFixed(0)+'</span></div><div style="height:7px;background:#e9eef3;border-radius:99px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+pct+'%;background:'+(pct>=90?'#c0392b':'var(--blue)')+'"></div></div><div class="muted" style="font-size:12px;margin-top:5px">When the budget is reached the agents stop on their own until next month.</div></div>'
     +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">'+cards+'</div>';
 }
 async function recAgentToggle(key,on){
-  const ok=await confirmBox(on?'Turn on this agent?':'Turn off this agent?', on?'It will start preparing drafts for new applicants every hour, up to the daily limit and within the monthly budget. It never moves candidates or sends emails.':'It will stop preparing drafts. Existing drafts stay available to review.', on?'Yes, turn on':'Yes, turn off');
+  const m=(window.__recMeta||{})[key]||{};
+  const ok=await confirmBox(on?'Turn on this agent?':'Turn off this agent?', on?((m.on||'It will start preparing drafts.')+' It never moves candidates or sends emails.'):'It will stop preparing drafts. Existing drafts stay available to review.', on?'Yes, turn on':'Yes, turn off');
   if(!ok) return;
   const {data,error}=await sb.rpc('recruiting_agent_set',{p_agent:key,p_on:on});
   if(error||!data||!data.ok){ T('Could not update: '+((data&&data.error)||(error&&error.message)||'')); return; }
@@ -2721,24 +2724,48 @@ async function recAgentToggle(key,on){
   renderRecruitingAgents();
 }
 async function recAgentDrafts(key){
-  const {data,error}=await sb.from('agent_draft').select('id,payload,created_at,application_id').eq('agent_key',key).eq('status','pending').order('created_at',{ascending:false}).limit(30);
+  const {data,error}=await sb.from('agent_draft').select('id,kind,payload,created_at,application_id').eq('agent_key',key).eq('status','pending').order('created_at',{ascending:false}).limit(30);
   if(error){ T('Could not load drafts: '+error.message); return; }
   const old=document.getElementById('recDraftsOv'); if(old) old.remove();
   const ov=document.createElement('div'); ov.id='recDraftsOv';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,34,51,.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:4vh 16px;overflow:auto';
-  const chip=r=>({advance:['Advance','#e3f6ea','#1b6b3a'],review:['Review','#fff4d6','#7a5b00'],reject:['Reject','#fde8e6','#a03020']}[r]||[r,'#eef1f4','#333']);
+  window.__recMsgs={};
+  const chip=(t,bg,fg)=>'<span style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:'+bg+';color:'+fg+'">'+esc(t)+'</span>';
+  const recChip=r=>({advance:['Advance','#e3f6ea','#1b6b3a'],review:['Review','#fff4d6','#7a5b00'],reject:['Reject','#fde8e6','#a03020']}[r]||[r,'#eef1f4','#333']);
+  const actChip=r=>({message_candidate:['Message the candidate','#e3f0fb','#0b4f8a'],internal_follow_up:['Nudge the client / team','#fff4d6','#7a5b00'],close_out:['Close out politely','#eef1f4','#44505a']}[r]||[r,'#eef1f4','#333']);
   const list=l=>(l&&l.length)?'<ul style="margin:4px 0 0;padding-left:18px">'+l.filter(Boolean).map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul>':'';
+  const msgBox=(id,txt)=>{ window.__recMsgs[id]=txt; return '<div style="margin-top:8px;background:#f6faff;border:1px solid #dbe7fb;border-radius:10px;padding:10px 12px;font-size:13px;white-space:pre-wrap">'+esc(txt)+'</div><button class="btn-ghost" style="font-size:12px;padding:5px 12px;margin-top:6px" onclick="recCopyMsg(\''+id+'\',this)">Copy message</button>'; };
+  const btns={screening:['Useful','Dismiss'],followup:['Mark as done','Dismiss'],sourcing:['Mark as contacted','Dismiss']};
   const items=(data||[]).map(function(d){
-    const p=d.payload||{}; const c=chip(p.recommendation);
-    return '<div data-draft="'+d.id+'" style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;background:#fff">'
-      +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><b style="color:var(--navy)">'+esc(p.candidate||'Candidate')+'</b><div class="muted" style="font-size:12.5px">'+esc(p.position||'')+'</div></div>'
-      +'<div><span style="font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:999px;background:'+c[1]+';color:'+c[2]+'">'+c[0]+'</span> <b style="margin-left:6px">'+esc(p.fit_score==null?'':p.fit_score)+'/100</b></div></div>'
-      +'<p style="font-size:13px;margin:10px 0 6px">'+esc(p.summary||'')+'</p>'
-      +'<div style="font-size:12.5px"><b>Strengths</b>'+list(p.strengths)+'<div style="margin-top:6px"><b>Concerns</b></div>'+list(p.concerns)+'<div style="margin-top:6px"><b>Ask the candidate</b></div>'+list(p.questions)+'</div>'
-      +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn-primary" style="font-size:12.5px;padding:6px 14px" onclick="recDraftDecide(\''+d.id+'\',true)">Useful</button><button class="btn-ghost" style="font-size:12.5px;padding:6px 14px" onclick="recDraftDecide(\''+d.id+'\',false)">Dismiss</button></div></div>';
+    const p=d.payload||{}; let body='';
+    if(d.kind==='screening'){
+      const c=recChip(p.recommendation);
+      body='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><b style="color:var(--navy)">'+esc(p.candidate||'Candidate')+'</b><div class="muted" style="font-size:12.5px">'+esc(p.position||'')+'</div></div><div>'+chip(c[0],c[1],c[2])+' <b style="margin-left:6px">'+esc(p.fit_score==null?'':p.fit_score)+'/100</b></div></div>'
+        +'<p style="font-size:13px;margin:10px 0 6px">'+esc(p.summary||'')+'</p>'
+        +'<div style="font-size:12.5px"><b>Strengths</b>'+list(p.strengths)+'<div style="margin-top:6px"><b>Concerns</b></div>'+list(p.concerns)+'<div style="margin-top:6px"><b>Ask the candidate</b></div>'+list(p.questions)+'</div>';
+    } else if(d.kind==='followup'){
+      const c=actChip(p.action);
+      body='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><b style="color:var(--navy)">'+esc(p.candidate||'Candidate')+'</b><div class="muted" style="font-size:12.5px">'+esc(p.position||'')+' · '+esc(String(p.stage||'').replace(/_/g,' '))+' · '+esc(p.days_stalled)+' days without movement</div></div><div>'+chip(c[0],c[1],c[2])+'</div></div>'
+        +'<p style="font-size:13px;margin:10px 0 0">'+esc(p.reason||'')+'</p>'
+        +(p.internal_note?'<p style="font-size:13px;margin:8px 0 0"><b>Note:</b> '+esc(p.internal_note)+'</p>':'')
+        +(p.body?'<div class="muted" style="font-size:12px;margin-top:8px">'+(p.email?'To: '+esc(p.email)+' · ':'')+(p.subject?'Subject: '+esc(p.subject):'')+'</div>'+msgBox(d.id,p.body):'');
+    } else if(d.kind==='sourcing'){
+      body='<div style="display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap"><div><b style="color:var(--navy)">'+esc(p.candidate||'Candidate')+'</b><div class="muted" style="font-size:12.5px">For: '+esc(p.position||'')+' · '+esc(p.location||'')+(p.english_level?' · '+esc(p.english_level):'')+'</div></div><div>'+chip('Worth contacting','#e3f6ea','#1b6b3a')+' <b style="margin-left:6px">'+esc(p.fit_score==null?'':p.fit_score)+'/100</b></div></div>'
+        +'<p style="font-size:13px;margin:10px 0 0">'+esc(p.reason||'')+'</p>'
+        +(p.linkedin_url&&/^https?:\/\//.test(p.linkedin_url)?'<div style="font-size:12.5px;margin-top:6px"><a href="'+esc(p.linkedin_url)+'" target="_blank" rel="noopener">LinkedIn profile ↗</a></div>':'')
+        +(p.outreach_message?msgBox(d.id,p.outreach_message):'');
+    } else { body='<pre style="font-size:12px;white-space:pre-wrap">'+esc(JSON.stringify(p,null,2))+'</pre>'; }
+    const b=btns[d.kind]||['Useful','Dismiss'];
+    return '<div data-draft="'+d.id+'" style="border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:10px;background:#fff">'+body
+      +'<div style="display:flex;gap:8px;margin-top:10px"><button class="btn-primary" style="font-size:12.5px;padding:6px 14px" onclick="recDraftDecide(\''+d.id+'\',true)">'+b[0]+'</button><button class="btn-ghost" style="font-size:12.5px;padding:6px 14px" onclick="recDraftDecide(\''+d.id+'\',false)">'+b[1]+'</button></div></div>';
   }).join('');
-  ov.innerHTML='<div style="background:var(--bg,#f4f8fb);border-radius:16px;max-width:720px;width:100%;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--navy)">Drafts to review</h3><button class="btn-ghost" onclick="document.getElementById(\'recDraftsOv\').remove();renderRecruitingAgents()">Close</button></div><p class="muted" style="font-size:12.5px;margin:0 0 12px">These are suggestions. Marking one as useful or dismissing it does not move the candidate; you decide the next step in the pipeline.</p>'+(items||'<p class="muted">No drafts waiting.</p>')+'</div>';
+  ov.innerHTML='<div style="background:var(--bg,#f4f8fb);border-radius:16px;max-width:720px;width:100%;padding:18px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><h3 style="margin:0;color:var(--navy)">Drafts to review</h3><button class="btn-ghost" onclick="document.getElementById(\'recDraftsOv\').remove();renderRecruitingAgents()">Close</button></div><p class="muted" style="font-size:12.5px;margin:0 0 12px">These are suggestions. Nothing is sent and no candidate is moved: copy the message and send it yourself, and decide the next step in the pipeline.</p>'+(items||'<p class="muted">No drafts waiting.</p>')+'</div>';
   document.body.appendChild(ov);
+}
+function recCopyMsg(id,btn){
+  const t=(window.__recMsgs||{})[id]||'';
+  const done=function(){ if(btn){ btn.textContent='Copied'; setTimeout(function(){ btn.textContent='Copy message'; },1500); } };
+  try{ navigator.clipboard.writeText(t).then(done,function(){ T('Select the text and copy it manually'); }); }catch(e){ T('Select the text and copy it manually'); }
 }
 async function recDraftDecide(id,ok){
   const {data,error}=await sb.rpc('agent_draft_decide',{p_id:id,p_approve:ok});
