@@ -2594,7 +2594,7 @@ function anPaintSources(rows){
   box.innerHTML=arr.length? arr.map(([s,n])=>`<div class="an-hb"><div class="nm" title="${esc(s)}">${esc(s)}</div><div class="tr"><div class="fl" style="width:${Math.round(n/max*100)}%"></div></div><div class="vl">${n.toLocaleString('en-US')}</div></div>`).join('') : '<p class="muted">No source data yet.</p>';
 }
 // ===== AI HUB =====
-function brainLaunch(){if(window.openBrain)return openBrain();const s=document.createElement('script');s.src='/brain.js?v=1';s.onload=()=>openBrain();s.onerror=()=>alert('Could not load Brain');document.head.appendChild(s);}
+function brainLaunch(){if(window.openBrain)return openBrain();const s=document.createElement('script');s.src='/brain.js?v=2';s.onload=()=>openBrain();s.onerror=()=>alert('Could not load Brain');document.head.appendChild(s);}
 function renderAIHub(){
   document.getElementById('view').innerHTML=`
     <div class="content" style="max-width:900px">
@@ -9478,5 +9478,6 @@ if(typeof _docs==='function'){
 }
 })();
 </script>
+<script src="/agents2.js?v=1" defer></script>
 </body>
 </html>
