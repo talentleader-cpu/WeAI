@@ -1,8 +1,8 @@
 // ===== BRAIN (live agent graph) =====
-const BRAIN_COL={screener:'#4da3ff',followup:'#ffb454',sourcing:'#4be3a0',job_intake:'#b48cff',analytics:'#ff7ab6'};
-const BRAIN_LBL={screener:'Screener',followup:'Follow-up',sourcing:'Sourcing',job_intake:'Job Intake',analytics:'Analytics'};
+const BRAIN_COL={screener:'#4da3ff',followup:'#ffb454',sourcing:'#4be3a0',job_intake:'#b48cff',analytics:'#ff7ab6',interview_analyst:'#5ee6e6',client_intel:'#e6e65e'};
+const BRAIN_LBL={screener:'Screener',followup:'Follow-up',sourcing:'Sourcing',job_intake:'Job Intake',analytics:'Analytics',interview_analyst:'Interview Analyst',client_intel:'Client Intel'};
 const BRAIN_SALES=['#ff6b6b','#ff8f5a','#ffd25a','#c0e65a','#5ae6c0','#5ac8ff','#8f8bff','#e68bff','#ff8bb8','#b0b8c4'];
-const BRAIN_KIND={job_intake:'Intake',analytics_report:'Report'};
+const BRAIN_KIND={job_intake:'Intake',analytics_report:'Report',interview_eval:'Interview',client_intel:'Client'};
 let _brain=null;
 function brainShort(n){n=String(n||'').trim();if(!n)return 'Candidate';const p=n.split(/\s+/);return p[0]+(p[1]?' '+p[1][0]+'.':'');}
 function brainAgo(ts){const s=Math.max(0,(Date.now()-new Date(ts).getTime())/1000);if(s<90)return 'now';if(s<3600)return Math.round(s/60)+'m';if(s<86400)return Math.round(s/3600)+'h';return Math.round(s/86400)+'d';}
