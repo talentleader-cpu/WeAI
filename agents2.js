@@ -100,6 +100,46 @@
     });
   }
 
+
+  // ---- Bulk reject must carry a reason (pwBulkMoveTo used to reject without asking) ----
+  function askBulkReason(stage,n){
+    return new Promise(async resolve=>{
+      let list=[];try{list=await window.rrLoad(true);}catch(x){}
+      const sc=stage==='rejected_client'?'client':'wexpand';
+      const opts=(list||[]).filter(r=>r.scope==='both'||r.scope===sc).map(r=>'<option value="'+e(r.label)+'">'+e(r.label)+'</option>').join('');
+      const ov=document.createElement('div');
+      ov.style.cssText='position:fixed;inset:0;background:rgba(15,34,51,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+      const bs='padding:8px 14px;border:none;border-radius:8px;font:inherit;font-size:13px;cursor:pointer;';
+      ov.innerHTML='<div style="background:#fff;border-radius:14px;max-width:440px;width:100%;padding:20px;display:flex;flex-direction:column;gap:10px"><div style="font-weight:700;color:var(--navy);font-size:16px">Rejection reason</div><div style="font-size:12.5px;color:#5a6f84;line-height:1.45">This reason is saved for the '+n+' selected candidate'+(n===1?'':'s')+'. If they were rejected for different reasons, reject them in separate groups.</div><select id="bkSel" style="padding:9px;border:1px solid #dfe5ec;border-radius:10px;font:inherit;font-size:13.5px"><option value="">Select a reason…</option>'+opts+'</select><textarea id="bkNote" placeholder="Note (optional)" style="min-height:60px;padding:9px;border:1px solid #dfe5ec;border-radius:10px;font:inherit;font-size:13px"></textarea><div id="bkErr" style="color:#a03020;font-size:12px;min-height:14px"></div><div style="display:flex;gap:8px;justify-content:flex-end"><button id="bkNo" style="'+bs+'background:#eef1f4;color:#333">Cancel</button><button id="bkOk" style="'+bs+'background:#0f3b5f;color:#fff">Reject '+n+'</button></div></div>';
+      document.body.appendChild(ov);
+      const done=v=>{ov.remove();resolve(v);};
+      ov.querySelector('#bkNo').onclick=()=>done(null);
+      ov.addEventListener('click',ev=>{if(ev.target===ov)done(null);});
+      ov.querySelector('#bkOk').onclick=()=>{const r=ov.querySelector('#bkSel').value;if(!r){ov.querySelector('#bkErr').textContent='Select a reason to continue.';return;}done({reason:r,note:ov.querySelector('#bkNote').value.trim()});};
+    });
+  }
+  const origBulk=window.pwBulkMoveTo;
+  if(origBulk){
+    window.pwBulkMoveTo=async function(stage){
+      if(stage!=='rejected_wexpand'&&stage!=='rejected_client')return origBulk.apply(this,arguments);
+      if(!stage||!pwBulkSel||!pwBulkSel.size)return;
+      const ids=[...pwBulkSel];
+      const rr=await askBulkReason(stage,ids.length);
+      if(!rr)return;
+      const btn=document.getElementById('pwBulkMoveBtn');if(btn)btn.disabled=true;
+      let moved=0,failed=0;
+      for(const id of ids){
+        const a=pwApps.find(x=>x.id===id);if(!a)continue;
+        if(pipeStageOf(a)===stage){moved++;continue;}
+        const {error}=await sb.from('applications').update({stage:stage,rejection_reason:rr.reason,stage_remark:'Reason: '+rr.reason+(rr.note?' — '+rr.note:'')}).eq('id',id);
+        if(error){failed++;}else{a.stage=stage;moved++;}
+      }
+      try{pwBulkSel.clear();pwBulkMode=false;}catch(x){}
+      pwPaintBody();
+      toast(failed?('Moved '+moved+', '+failed+' failed'):('Rejected '+moved+' candidate'+(moved===1?'':'s')+' · reason saved'));
+    };
+  }
+
   const origDrafts=window.recAgentDrafts;
   window.recAgentDrafts=function(key){if(KIND[key])return open2(key);return origDrafts&&origDrafts.apply(this,arguments);};
   const origRender=window.renderRecruitingAgents;
