@@ -146,3 +146,5 @@
   if(origRender){window.renderRecruitingAgents=async function(){const r=await origRender.apply(this,arguments);try{tidy();}catch(x){}return r;};}
   setTimeout(()=>{try{tidy();}catch(x){}},0);
 })();
+/* load the error-analysis module for Support tickets */
+(function(){try{var x=document.createElement('script');x.src='/tickets2.js?v=1';x.defer=true;document.head.appendChild(x);}catch(e){}})();
