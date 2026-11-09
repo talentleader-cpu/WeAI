@@ -2594,13 +2594,13 @@ function anPaintSources(rows){
   box.innerHTML=arr.length? arr.map(([s,n])=>`<div class="an-hb"><div class="nm" title="${esc(s)}">${esc(s)}</div><div class="tr"><div class="fl" style="width:${Math.round(n/max*100)}%"></div></div><div class="vl">${n.toLocaleString('en-US')}</div></div>`).join('') : '<p class="muted">No source data yet.</p>';
 }
 // ===== AI HUB =====
-function brainLaunch(){if(window.openBrain)return openBrain();const s=document.createElement('script');s.src='/brain.js?v=2';s.onload=()=>openBrain();s.onerror=()=>alert('Could not load Brain');document.head.appendChild(s);}
+function brainLaunch(){if(window.openBrain)return openBrain();const s=document.createElement('script');s.src='/brain.js?v=3';s.onload=()=>openBrain();s.onerror=()=>alert('Could not load Brain');document.head.appendChild(s);}
 function renderAIHub(){
   document.getElementById('view').innerHTML=`
     <div class="content" style="max-width:900px">
       <h2 style="color:var(--navy);margin:6px 0 2px">AI</h2>
       <p class="muted" style="margin:0 0 16px">The home for Wexpand's assistants, agents and automations. This will keep growing as we build them out.</p>
-      <div style="margin:0 0 18px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,#071a2b,#0b3a5e);color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>WeAI Brain</b><div style="font-size:12.5px;opacity:.85;margin-top:2px">Watch the recruiting agents work live.</div></div><button onclick="brainLaunch()" style="background:#fff;color:#0653A1;border:0;border-radius:9px;padding:8px 14px;font-weight:700;cursor:pointer">Open Brain →</button></div>
+      <div style="margin:0 0 18px;padding:14px 16px;border-radius:14px;background:linear-gradient(135deg,#071a2b,#0b3a5e);color:#fff;display:flex;align-items:center;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>Wexpand Brain · Cerebro Universal</b><div style="font-size:12.5px;opacity:.85;margin-top:2px">WeAI, Growth OS, Simulador y Laboratorio de evaluación en vivo.</div></div><button onclick="brainLaunch()" style="background:#fff;color:#0653A1;border:0;border-radius:9px;padding:8px 14px;font-weight:700;cursor:pointer">Open Brain →</button></div>
       <div class="an-intel" style="background:linear-gradient(135deg,#f6faff,#eef5ff)">
         <h3>Coming soon</h3>
         <ul>
