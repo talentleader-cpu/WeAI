@@ -2594,7 +2594,7 @@ function anPaintSources(rows){
   box.innerHTML=arr.length? arr.map(([s,n])=>`<div class="an-hb"><div class="nm" title="${esc(s)}">${esc(s)}</div><div class="tr"><div class="fl" style="width:${Math.round(n/max*100)}%"></div></div><div class="vl">${n.toLocaleString('en-US')}</div></div>`).join('') : '<p class="muted">No source data yet.</p>';
 }
 // ===== AI HUB =====
-function brainLaunch(){const o={onRubricas:()=>window.open('/agentes.html?v=rubricas&p=weai','_blank','noopener')};if(window.openBrain)return openBrain(o);const s=document.createElement('script');s.src='/brain.js?v=4';s.onload=()=>openBrain(o);s.onerror=()=>alert('Could not load Brain');document.head.appendChild(s);}
+function brainLaunch(){const o={onRubricas:()=>window.open('/agentes.html?v=rubricas&p=weai','_blank','noopener')};if(window.openBrain)return openBrain(o);const s=document.createElement('script');s.src='/brain.js?v=5';s.onload=()=>openBrain(o);s.onerror=()=>alert('Could not load Brain');document.head.appendChild(s);}
 function renderAIHub(){
   document.getElementById('view').innerHTML=`
     <div class="content" style="max-width:900px">
