@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Centro de agentes · Wexpand</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--blue:#0653A1;--orange:#F07E2E;--sky:#96D4E7;--teal:#00A0C1;--navy:#00415E;--yellow:#F7A700;--ink:#0f2233;--muted:#5a6b78;--line:#e4ecf2;--bg:#eef4f9;--verde:#2E9E5B;--amarillo:#E0A100;--rojo:#C8372D;--gris:#8a99a6}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:Montserrat,Arial,Helvetica,sans-serif;color:var(--ink);background:var(--bg);display:flex;flex-direction:column}
+button,input,select{font:inherit}
+.hidden{display:none!important}
+/* login */
+#login{flex:1;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--navy),var(--blue) 70%,var(--teal));padding:20px}
+#login form{background:#fff;border-radius:16px;padding:28px;width:min(380px,100%);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+#login h1{margin:0 0 4px;color:var(--navy);font-size:22px}
+#login p{margin:0 0 16px;color:var(--muted);font-size:13px}
+#login label{display:block;font-size:12.5px;font-weight:700;color:var(--navy);margin:12px 0 5px}
+#login input{width:100%;border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+#login button{margin-top:18px;width:100%;background:var(--orange);color:#fff;border:0;border-radius:10px;padding:11px;font-weight:700;cursor:pointer}
+#login .err{color:var(--rojo);font-size:12.5px;margin-top:10px}
+/* barra */
+header.top{background:var(--navy);color:#fff;display:flex;align-items:center;gap:12px;padding:10px 18px;flex-wrap:wrap}
+header.top h1{margin:0;font-size:16px;letter-spacing:.06em}
+header.top h1 span{color:var(--sky);font-weight:500}
+.seg{display:flex;gap:3px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:3px}
+.seg button{background:transparent;border:0;color:#dfeaf5;padding:6px 12px;border-radius:7px;cursor:pointer;font-size:13px}
+.seg button[aria-pressed=true]{background:#fff;color:var(--navy);font-weight:700}
+.seg.tabs button[aria-pressed=true]{background:var(--orange);color:#fff}
+.sp{flex:1}
+.who{font-size:12px;color:var(--sky)}
+.lnk{background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;text-decoration:none}
+/* cerebro */
+#vBrain{flex:1;position:relative;min-height:0}
+/* rubricas */
+#vRub{flex:1;overflow:auto;padding:18px}
+.wrap{max-width:1280px;margin:0 auto}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.kpi b{display:block;font-size:24px;color:var(--navy)}
+.kpi span{font-size:12px;color:var(--muted)}
+.metodo{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:14px 0}
+.metodo div{background:#fff;border:1px solid var(--line);border-left:4px solid var(--orange);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--muted)}
+.metodo div b{display:block;color:var(--navy);font-size:13px;margin-bottom:3px}
+@media(max-width:900px){.metodo{grid-template-columns:1fr 1fr}}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0 12px}
+.tools input{flex:1 1 260px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:#fff}
+.tools select{border:1px solid var(--line);border-radius:10px;padding:9px 10px;background:#fff}
+.btn{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:9px 13px;font-weight:700;font-size:13px;cursor:pointer;text-decoration:none;display:inline-block}
+.btn.sec{background:#fff;color:var(--navy);border:1px solid var(--line)}
+h2.plat{display:flex;align-items:center;gap:10px;font-size:15px;color:var(--navy);margin:22px 0 10px;text-transform:uppercase;letter-spacing:.06em}
+h2.plat i{width:10px;height:10px;border-radius:50%}
+h2.plat small{font-weight:500;color:var(--muted);text-transform:none;letter-spacing:0;font-size:12.5px}
+.ag{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.ag>summary{list-style:none;cursor:pointer;display:grid;grid-template-columns:minmax(220px,2fr) 120px repeat(4,minmax(80px,1fr)) 26px;gap:10px;align-items:center;padding:12px 14px}
+.ag>summary::-webkit-details-marker{display:none}
+.ag>summary:after{content:'▸';color:var(--muted);text-align:right}
+.ag[open]>summary:after{content:'▾'}
+.ag .nm b{color:var(--navy);display:block}
+.ag .nm span{font-size:12px;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.st{font-size:11.5px;color:var(--muted)}
+.st b{display:block;font-size:15px;color:var(--ink)}
+.pill{display:inline-block;padding:3px 9px;border-radius:99px;font-size:11.5px;font-weight:700;color:#fff;background:var(--gris);white-space:nowrap}
+.pill.verde{background:var(--verde)}.pill.amarillo{background:var(--amarillo)}.pill.rojo{background:var(--rojo)}
+@media(max-width:800px){.ag>summary{grid-template-columns:1fr 1fr 1fr}.ag>summary:after{display:none}}
+.crit{width:100%;border-collapse:collapse;font-size:12.5px}
+.crit th{background:#f6f9fc;color:var(--muted);font-weight:700;text-align:left;padding:8px 10px;border-top:1px solid var(--line);font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+.crit td{padding:9px 10px;border-top:1px solid var(--line);vertical-align:top}
+.crit td.q{min-width:260px}
+.crit .cd{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:var(--blue)}
+.crit .sm{color:var(--muted);font-size:11.5px;margin-top:4px}
+.sev{display:inline-block;font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;white-space:nowrap}
+.sev3{background:#fbe5e3;color:var(--rojo)}.sev2{background:#fff3d6;color:#9a6b00}.sev1{background:#e7f0f8;color:var(--blue)}
+.ok{color:var(--verde);font-weight:700}.no{color:var(--muted)}
+.ev{background:#fff;border:1px solid var(--line);border-left:4px solid var(--rojo);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12.5px}
+.nota{font-size:12px;color:var(--muted);margin-top:6px}
+.empty{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--muted);text-align:center}
+body.embed header.top .who,body.embed #salir{display:none}
+body.embed header.top{padding-right:230px}
+</style>
+</head>
+<body>
+<section id="login" class="hidden">
+  <form id="fLogin">
+    <h1>Centro de agentes</h1>
+    <p>Entra con tu cuenta de WeAI para ver el cerebro y las rúbricas de evaluación.</p>
+    <label for="em">Correo</label><input id="em" type="email" autocomplete="username" required>
+    <label for="pw">Contraseña</label><input id="pw" type="password" autocomplete="current-password" required>
+    <button id="lBtn" type="submit">Entrar</button>
+    <div class="err hidden" id="lErr"></div>
+  </form>
+</section>
+
+<header class="top hidden" id="top">
+  <h1>WEXPAND <span>· Centro de agentes</span></h1>
+  <div class="seg tabs" role="group" aria-label="Vista">
+    <button data-tab="cerebro" aria-pressed="false">Cerebro</button>
+    <button data-tab="rubricas" aria-pressed="false">Rúbricas de evaluación</button>
+  </div>
+  <div class="seg" role="group" aria-label="Plataforma" id="plats">
+    <button data-p="all" aria-pressed="false">Todas</button>
+    <button data-p="weai" aria-pressed="false">WeAI</button>
+    <button data-p="growth" aria-pressed="false">Growth OS</button>
+    <button data-p="sim" aria-pressed="false">Simulador</button>
+  </div>
+  <span class="sp"></span>
+  <span class="who" id="who"></span>
+  <button class="lnk" id="salir" type="button">Salir</button>
+</header>
+
+<main id="vBrain" class="hidden"></main>
+
+<main id="vRub" class="hidden"><div class="wrap">
+  <div class="kpis" id="kpis"></div>
+  <div class="metodo">
+    <div><b>1 · Revisar</b>Un recruiter lee conversaciones reales del agente y anota qué salió mal.</div>
+    <div><b>2 · Agrupar errores</b>Las notas se agrupan en tipos de error; los más frecuentes se vuelven criterios.</div>
+    <div><b>3 · Criterio binario</b>Cada criterio es una pregunta de pasa / falla, con su severidad.</div>
+    <div><b>4 · Calibrar</b>≥30 conversaciones revisadas por dos personas y ≥85% de acuerdo.</div>
+    <div><b>5 · Juez automático</b>Pasa a producción cuando acierta >80% en fallas y en aciertos (TPR/TNR) en el set de prueba.</div>
+  </div>
+  <div class="tools">
+    <input id="q" type="search" placeholder="Buscar agente, criterio o código">
+    <select id="fSev"><option value="">Todas las severidades</option><option value="3">Crítica</option><option value="2">Importante</option><option value="1">Menor</option></select>
+    <select id="fSem"><option value="">Todos los estados</option><option value="rojo">En rojo</option><option value="amarillo">En amarillo</option><option value="verde">En verde</option><option value="sin">Sin datos suficientes</option></select>
+    <a class="btn" href="https://claude.ai/artifact/K5ukps3GzS64o4DPdRk6L7" target="_blank" rel="noopener">Revisar conversaciones ↗</a>
+    <button class="btn sec" type="button" id="csv">Descargar rúbricas (CSV)</button>
+  </div>
+  <div id="lista"></div>
+  <h2 class="plat"><i style="background:var(--rojo)"></i>Fallas críticas recientes</h2>
+  <div id="eventos"></div>
+  <p class="nota" id="pie"></p>
+</div></main>
+
+<script>
+var SUPABASE_URL='https://eabnfggpviymtrhvnimn.supabase.co';
+var SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYm5mZ2dwdml5bXRyaHZuaW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NjQ4MDQsImV4cCI6MjEwMTU0MDgwNH0.9YbwqNbQPSrNalu1Ap0xMiwx5BI4UjQbI6UdxHmkg3Y';
+var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var qs=new URLSearchParams(location.search);
+  var EMBED=qs.get('embed')==='1';
+  var PLAT=['all','weai','growth','sim'].indexOf(qs.get('p'))>=0?qs.get('p'):'all';
+  var TAB=qs.get('v')==='rubricas'?'rubricas':'cerebro';
+  var SYS={weai:'weai',growth:'growth_os',sim:'simulador'};
+  var SYS_LBL={weai:'Recruiting · WeAI',growth_os:'Growth OS',simulador:'Simulador de entrevistas'};
+  var SYS_COL={weai:'#4da3ff',growth_os:'#ffd25a',simulador:'#5ee6e6'};
+  var VIEW={all:'all',weai:'recruiting',growth:'growth',sim:'sim'};
+  var SEV={3:'Crítica',2:'Importante',1:'Menor'};
+  var DATA=null,brainLoaded=false,timer=0;
+  if(EMBED)document.body.classList.add('embed');
+  function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  window.esc=esc;
+  function num(v){return v==null||v===''?'–':Number(v).toLocaleString('es-MX');}
+  function hace(ts){if(!ts)return '—';var s=(Date.now()-new Date(ts).getTime())/1000;if(s<90)return 'hace un momento';if(s<3600)return 'hace '+Math.round(s/60)+' min';if(s<86400)return 'hace '+Math.round(s/3600)+' h';return 'hace '+Math.round(s/86400)+' d';}
+  function semClass(s){return s==='verde'||s==='amarillo'||s==='rojo'?s:'';}
+  function semTxt(s){return s==='verde'?'Verde':s==='amarillo'?'Amarillo':s==='rojo'?'Rojo':'Sin datos';}
+  function syncUrl(){var u=new URL(location.href);u.searchParams.set('v',TAB);u.searchParams.set('p',PLAT);history.replaceState(null,'',u);}
+
+  /* ---------- acceso ---------- */
+  sb.auth.getSession().then(function(r){if(r.data.session)entra(r.data.session);else $('login').classList.remove('hidden');});
+  sb.auth.onAuthStateChange(function(ev,ses){if(ev==='SIGNED_OUT')location.reload();});
+  $('fLogin').onsubmit=function(e){e.preventDefault();$('lErr').classList.add('hidden');$('lBtn').disabled=true;
+    sb.auth.signInWithPassword({email:$('em').value.trim(),password:$('pw').value}).then(function(r){$('lBtn').disabled=false;
+      if(r.error){$('lErr').textContent='Correo o contraseña incorrectos.';$('lErr').classList.remove('hidden');return;}entra(r.data.session);});};
+  $('salir').onclick=function(){sb.auth.signOut();};
+  function entra(ses){$('login').classList.add('hidden');$('top').classList.remove('hidden');$('who').textContent=ses.user&&ses.user.email||'';pintaBotones();muestra();}
+
+  /* ---------- navegación ---------- */
+  function pintaBotones(){
+    document.querySelectorAll('[data-tab]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.tab===TAB);});
+    document.querySelectorAll('[data-p]').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.p===PLAT);});
+  }
+  document.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){TAB=b.dataset.tab;pintaBotones();syncUrl();muestra();};});
+  document.querySelectorAll('[data-p]').forEach(function(b){b.onclick=function(){PLAT=b.dataset.p;pintaBotones();syncUrl();if(TAB==='cerebro')reabreCerebro();else pintaRub();};});
+  function muestra(){
+    $('vBrain').classList.toggle('hidden',TAB!=='cerebro');$('vRub').classList.toggle('hidden',TAB!=='rubricas');
+    if(TAB==='cerebro'){clearInterval(timer);timer=0;abreCerebro();}
+    else{if(window.closeBrain)closeBrain();cargaRub();if(!timer)timer=setInterval(cargaRub,60000);}
+  }
+
+  /* ---------- cerebro ---------- */
+  function abreCerebro(){
+    if(brainLoaded&&window.openBrain)return reabreCerebro();
+    var s=document.createElement('script');s.src='/brain.js?v=4';
+    s.onload=function(){brainLoaded=true;reabreCerebro();};
+    s.onerror=function(){$('vBrain').innerHTML='<div class="empty" style="margin:20px">No se pudo cargar el cerebro.</div>';};
+    document.head.appendChild(s);
+  }
+  function reabreCerebro(){
+    if(!window.openBrain)return;if(window.closeBrain)closeBrain();
+    openBrain({mount:$('vBrain'),embed:true,view:VIEW[PLAT],platform:qs.get('from')||null,onRubricas:function(){TAB='rubricas';pintaBotones();syncUrl();muestra();}});
+  }
+
+  /* ---------- rúbricas ---------- */
+  function cargaRub(){
+    if(!DATA)$('lista').innerHTML='<div class="empty">Cargando rúbricas…</div>';
+    sb.rpc('eval_rubricas').then(function(r){
+      if(r.error){$('lista').innerHTML='<div class="empty">No pudimos cargar las rúbricas ('+esc(r.error.message)+'). Si acabas de entrar, verifica que tu usuario tenga acceso al equipo.</div>';return;}
+      DATA=r.data||{agentes:[]};pintaRub();
+    });
+  }
+  function filtrados(){
+    var q=$('q').value.trim().toLowerCase(),sev=$('fSev').value,sem=$('fSem').value;
+    return (DATA.agentes||[]).filter(function(a){
+      if(PLAT!=='all'&&a.system!==SYS[PLAT])return false;
+      if(sem){if(sem==='sin'){if(semClass(a.semaforo))return false;}else if(a.semaforo!==sem)return false;}
+      return true;
+    }).map(function(a){
+      var crit=(a.criterios||[]).filter(function(c){
+        if(sev&&String(c.severity)!==sev)return false;
+        if(!q)return true;
+        return [a.name,a.agent_key,c.code,c.name,c.question].join(' ').toLowerCase().indexOf(q)>=0;
+      });
+      return Object.assign({},a,{_crit:crit});
+    }).filter(function(a){return a._crit.length||(!q&&!sev);});
+  }
+  function pintaRub(){
+    if(!DATA)return;
+    var ag=filtrados(),todos=(DATA.agentes||[]).filter(function(a){return PLAT==='all'||a.system===SYS[PLAT];});
+    var nCrit=0,pend=0,crit30=0,cnt={verde:0,amarillo:0,rojo:0,sin:0},jueces=0,calib=0;
+    todos.forEach(function(a){nCrit+=(a.criterios||[]).length;pend+=Number(a.pendientes)||0;crit30+=Number(a.criticas)||0;cnt[semClass(a.semaforo)||'sin']++;
+      (a.criterios||[]).forEach(function(c){if(c.juez&&c.juez.listo)jueces++;if(c.calibrado)calib++;});});
+    $('kpis').innerHTML=[
+      [todos.length,'agentes con rúbrica'],[nCrit,'criterios'],[num(pend),'conversaciones por revisar'],
+      [crit30,'fallas críticas (30 días)'],[calib+' / '+nCrit,'criterios calibrados'],[jueces,'jueces listos para producción'],
+      ['<span style="color:var(--verde)">'+cnt.verde+'</span> · <span style="color:var(--amarillo)">'+cnt.amarillo+'</span> · <span style="color:var(--rojo)">'+cnt.rojo+'</span>','verde · amarillo · rojo ('+cnt.sin+' sin datos)']
+    ].map(function(k){return '<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>';}).join('');
+    var html='';
+    ['weai','growth_os','simulador'].forEach(function(sys){
+      var arr=ag.filter(function(a){return a.system===sys;});if(!arr.length)return;
+      html+='<h2 class="plat"><i style="background:'+SYS_COL[sys]+'"></i>'+SYS_LBL[sys]+' <small>'+arr.length+' agentes'+(sys==='simulador'&&DATA.simulador_actualizado?' · datos sincronizados '+hace(DATA.simulador_actualizado):'')+'</small></h2>';
+      arr.forEach(function(a){
+        var sv={3:0,2:0,1:0};(a.criterios||[]).forEach(function(c){sv[c.severity]=(sv[c.severity]||0)+1;});
+        var abierto=!!($('q').value.trim()||$('fSev').value);
+        html+='<details class="ag"'+(abierto?' open':'')+'><summary>'+
+          '<div class="nm"><b>'+esc(a.name)+'</b><span>'+esc(a.what_it_does||'')+'</span></div>'+
+          '<div><span class="pill '+semClass(a.semaforo)+'">'+semTxt(a.semaforo)+'</span></div>'+
+          '<div class="st"><b>'+(semClass(a.semaforo)&&a.salud!=null?Math.round(a.salud):'—')+'</b>salud</div>'+
+          '<div class="st"><b>'+num(a.revisadas)+'</b>revisadas 30 d</div>'+
+          '<div class="st"><b>'+num(a.pendientes)+'</b>por revisar</div>'+
+          '<div class="st"><b>'+(a.criterios||[]).length+'</b>criterios · <span style="color:var(--rojo)">'+sv[3]+'</span>/<span style="color:#9a6b00">'+sv[2]+'</span>/<span style="color:var(--blue)">'+sv[1]+'</span></div>'+
+          '</summary><div style="overflow-x:auto"><table class="crit"><thead><tr><th>Severidad</th><th>Criterio</th><th>Falla si… / Pasa si…</th><th>Cómo se mide</th><th>Fallas</th><th>Calibración</th><th>Juez</th></tr></thead><tbody>'+
+          (a._crit.length?a._crit.map(function(c){
+            var j=c.juez;
+            return '<tr><td><span class="sev sev'+c.severity+'">'+(SEV[c.severity]||c.severity)+'</span><div class="sm">'+esc(c.status||'')+' · v'+esc(c.version||1)+'</div></td>'+
+              '<td class="q"><div class="cd">'+esc(c.code)+'</div><b>'+esc(c.name)+'</b><div class="sm">'+esc(c.question||'')+'</div></td>'+
+              '<td class="q"><div><b style="color:var(--rojo)">Falla:</b> '+esc(c.fail_when||'—')+'</div><div class="sm"><b style="color:var(--verde)">Pasa:</b> '+esc(c.pass_when||'—')+'</div></td>'+
+              '<td>'+esc(c.measure||'—')+'</td>'+
+              '<td>'+(c.revisadas?num(c.fallas)+' de '+num(c.revisadas):'<span class="no">sin revisar</span>')+'</td>'+
+              '<td>'+(c.calibrado?'<span class="ok">✓ calibrado</span>':'<span class="no">'+num(c.dobles)+' / 30 dobles</span>')+(c.acuerdo_pct!=null?'<div class="sm">'+Math.round(c.acuerdo_pct)+'% acuerdo</div>':'')+'</td>'+
+              '<td>'+(j?(j.listo?'<span class="ok">✓ listo</span>':'<span class="no">en prueba</span>')+'<div class="sm">'+esc(j.kind)+(j.tpr!=null?' · TPR '+Math.round(j.tpr)+'% · TNR '+Math.round(j.tnr)+'%':'')+'</div>':'<span class="no">sin juez</span>')+'</td></tr>';
+          }).join(''):'<tr><td colspan="7" class="no">Ningún criterio coincide con el filtro.</td></tr>')+
+          '</tbody></table></div></details>';
+      });
+    });
+    $('lista').innerHTML=html||'<div class="empty">No hay agentes que coincidan con el filtro.</div>';
+    var evs=(DATA.eventos||[]).filter(function(e){var p=e.payload||{};if(PLAT==='all')return true;var k=String(p.agent_key||'');
+      return PLAT==='sim'?k.indexOf('sim:')===0:PLAT==='growth'?/^gos_|^s:/.test(k)||(DATA.agentes||[]).some(function(a){return a.agent_key===k&&a.system==='growth_os';}):(DATA.agentes||[]).some(function(a){return a.agent_key===k&&a.system==='weai';});});
+    $('eventos').innerHTML=evs.length?evs.slice(0,12).map(function(e){var p=e.payload||{};return '<div class="ev"><b>'+esc(p.agent_key||'')+'</b> · '+esc(p.criterio||'')+' <span class="no">· '+hace(e.created_at)+'</span>'+(p.reviewer?'<div class="sm">Revisó: '+esc(p.reviewer)+(p.nota?' · '+esc(String(p.nota).slice(0,140)):'')+'</div>':'')+'</div>';}).join(''):'<div class="empty">Sin fallas críticas registradas. Aparecen aquí en cuanto un recruiter marca una falla de severidad crítica.</div>';
+    $('pie').textContent='Se actualiza cada minuto. Los criterios están en versión hipótesis hasta que se calibren con revisiones reales.';
+  }
+  ['q','fSev','fSem'].forEach(function(id){$(id).addEventListener('input',pintaRub);});
+  $('csv').onclick=function(){
+    if(!DATA)return;var rows=[['plataforma','agente','codigo','criterio','severidad','pregunta','falla_si','pasa_si','medicion','estado','version','fallas','revisadas','calibrado','juez_listo']];
+    filtrados().forEach(function(a){a._crit.forEach(function(c){rows.push([SYS_LBL[a.system]||a.system,a.name,c.code,c.name,SEV[c.severity]||c.severity,c.question,c.fail_when,c.pass_when,c.measure,c.status,c.version,c.fallas,c.revisadas,c.calibrado?'si':'no',c.juez&&c.juez.listo?'si':'no']);});});
+    var csv=rows.map(function(r){return r.map(function(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}).join(',');}).join('\n');
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'}));a.download='rubricas-agentes-wexpand.csv';a.click();
+  };
+})();
+</script>
+</body>
+</html>

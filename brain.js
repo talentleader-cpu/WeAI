@@ -15,6 +15,7 @@ const BRAIN_LINKS=[
   ['WeAI','https://weai.wexpandmx.com','recruiting'],
   ['Growth OS','https://growth.wexpandmx.com','growth'],
   ['Simulador','https://camp.wexpandmx.com','sim'],
+  ['Rúbricas','https://weai.wexpandmx.com/agentes.html?v=rubricas','lab'],
   ['Laboratorio','https://claude.ai/artifact/K5ukps3GzS64o4DPdRk6L7','lab'],
   ['Video entrevistas','https://videointerviews.wexpandmx.com',null]
 ];
@@ -23,16 +24,19 @@ let _brain=null;
 function brainShort(n){n=String(n||'').trim();if(!n)return 'Candidate';const p=n.split(/\s+/);return p[0]+(p[1]?' '+p[1][0]+'.':'');}
 function brainAgo(ts){const s=Math.max(0,(Date.now()-new Date(ts).getTime())/1000);if(s<90)return 'now';if(s<3600)return Math.round(s/60)+'m';if(s<86400)return Math.round(s/3600)+'h';return Math.round(s/86400)+'d';}
 function brainEsc(s){return (typeof esc==='function')?esc(s):String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function openBrain(){
+function openBrain(opts){
+  opts=opts||{};
   if(_brain) return;
   if(!document.getElementById('brainCss')){const st=document.createElement('style');st.id='brainCss';st.textContent='#brainOv{position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 50% 42%,#0d2238 0%,#050d16 72%);color:#dfeaf5;font-family:Arial,Helvetica,sans-serif;display:flex;flex-direction:column}#brainOv .bh{display:flex;align-items:center;gap:10px;padding:10px 18px;flex-wrap:wrap}#brainOv .bh h2{margin:0;font-size:17px;letter-spacing:.1em}#brainOv .bh .sub{font-size:12px;color:#8fb3d1}#brainOv .live{display:flex;align-items:center;gap:6px;font-size:12px;color:#8fb3d1}#brainOv .live i{width:8px;height:8px;border-radius:50%;background:#4be3a0;box-shadow:0 0 8px #4be3a0;animation:bpulse 1.6s infinite}@keyframes bpulse{50%{opacity:.3}}#brainOv button{background:#12304a;color:#dfeaf5;border:1px solid #28506f;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer}#brainOv .bar{display:flex;align-items:center;gap:8px;padding:0 18px 8px;flex-wrap:wrap}#brainOv .views{display:flex;gap:4px;background:#0a1d2e;border:1px solid #1e3d58;border-radius:10px;padding:3px}#brainOv .views button{border:0;background:transparent;padding:5px 11px}#brainOv .views button[aria-pressed=true]{background:#1f4e78;color:#fff}#brainOv .plat{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}#brainOv .plat a{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:#0b1a28;background:#dfeaf5;border-radius:8px;padding:6px 11px;font-size:12.5px;font-weight:700}#brainOv .plat a i{width:8px;height:8px;border-radius:50%}#brainOv .plat a.here{background:#1f4e78;color:#fff;pointer-events:none}#brainOv .bm{flex:1;position:relative;min-height:0}#brainOv canvas{width:100%;height:100%;display:block}#brainOv .feed{position:absolute;right:14px;top:6px;width:min(310px,44vw);overflow:hidden;font-size:11.5px;pointer-events:none}#brainOv .feed div{background:rgba(10,28,44,.8);border-left:3px solid;border-radius:6px;padding:5px 8px;margin-bottom:5px;animation:bin .5s}@keyframes bin{from{opacity:0;transform:translateX(14px)}}#brainOv .leg{position:absolute;left:16px;bottom:12px;right:16px;font-size:11.5px;color:#8fb3d1;display:flex;gap:6px 14px;flex-wrap:wrap}#brainOv .leg i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}#brainOv .tip{position:absolute;pointer-events:none;background:#0b2236;border:1px solid #2b5578;border-radius:8px;padding:7px 10px;font-size:12px;max-width:280px;display:none;line-height:1.45}';document.head.appendChild(st);}
   const ov=document.createElement('div');ov.id='brainOv';
-  const here=location.hostname.indexOf('weai.')===0||location.hostname.indexOf('we-ai')===0;
-  ov.innerHTML='<div class="bh"><h2>WEXPAND BRAIN</h2><span class="sub">Cerebro Universal</span><span class="live"><i></i><span id="brLive">connecting…</span></span><span style="flex:1"></span><button id="brFs">Full screen</button><button id="brX">Close ✕</button></div>'+
+  const hn=location.hostname;
+  const plat=opts.platform||(hn.indexOf('growth')===0||hn.indexOf('wexpand-growth')===0?'growth':hn.indexOf('camp.')===0||hn.indexOf('training-camp')===0?'sim':(hn.indexOf('weai.')===0||hn.indexOf('we-ai')===0||hn.indexOf('we-')===0)?'recruiting':null);
+  const isHere=l=>!!plat&&l[2]===plat&&l[0]!=='Rúbricas'&&l[0]!=='Laboratorio';
+  ov.innerHTML='<div class="bh"><h2>WEXPAND BRAIN</h2><span class="sub">Cerebro Universal</span><span class="live"><i></i><span id="brLive">connecting…</span></span><span style="flex:1"></span>'+(opts.onRubricas?'<button id="brRub" style="background:#F07E2E;border-color:#F07E2E;color:#fff;font-weight:700">Rúbricas de evaluación</button>':'')+'<button id="brFs">Full screen</button>'+(opts.embed?'':'<button id="brX">Close ✕</button>')+'</div>'+
     '<div class="bar"><div class="views" role="group" aria-label="Vista">'+[['all','Universal'],['recruiting','Recruiting'],['growth','Growth OS'],['sim','Simulador'],['lab','Evaluación']].map((v,i)=>'<button data-v="'+v[0]+'" aria-pressed="'+(i===0)+'">'+v[1]+'</button>').join('')+'</div>'+
-    '<div class="plat">'+BRAIN_LINKS.map(l=>'<a href="'+l[1]+'" target="_blank" rel="noopener" class="'+(l[0]==='WeAI'&&here?'here':'')+'"><i style="background:'+(l[2]?BRAIN_HUBS[l[2]].color:'#c9d6e3')+'"></i>'+l[0]+(l[0]==='WeAI'&&here?' · aquí':' ↗')+'</a>').join('')+'</div></div>'+
+    '<div class="plat">'+BRAIN_LINKS.filter(l=>!(opts.onRubricas&&l[0]==='Rúbricas')).map(l=>'<a href="'+l[1]+'" target="_blank" rel="noopener" class="'+(isHere(l)?'here':'')+'"><i style="background:'+(l[2]?BRAIN_HUBS[l[2]].color:'#c9d6e3')+'"></i>'+l[0]+(isHere(l)?' · aquí':' ↗')+'</a>').join('')+'</div></div>'+
     '<div class="bm"><canvas id="brC"></canvas><div class="feed" id="brFeed"></div><div class="tip" id="brTip"></div><div class="leg"><span id="brLeg"></span><span><i style="background:#c9d6e3"></i>Positions</span><span><i style="background:transparent;border:2px solid #2E9E5B"></i>Anillo = salud de evaluación</span><span style="opacity:.8">Clic en un sub-cerebro para enfocarlo · pulso brillante = acción real</span></div></div>';
-  document.body.appendChild(ov);
+  if(opts.mount){ov.style.position='absolute';opts.mount.appendChild(ov);}else document.body.appendChild(ov);
   const cv=ov.querySelector('#brC'),cx=cv.getContext('2d'),tip=ov.querySelector('#brTip'),feed=ov.querySelector('#brFeed'),live=ov.querySelector('#brLive');
   const S={nodes:new Map(),links:[],pulses:[],seen:new Set(),queue:[],agents:{},evalBy:{},brains:{},w:0,h:0,dpr:1,hover:null,raf:0,timer:0,rel:0,first:true,firstT:true,firstE:true,t0:performance.now(),view:'all',hubPos:{}};
   _brain=S;
@@ -44,7 +48,7 @@ function openBrain(){
   const core=node('core','core','Cerebro Universal','#e8f3ff');
   Object.entries(BRAIN_HUBS).forEach(([k,h])=>{node('hub:'+k,'hub',h.label,h.color,{group:k,hub:k});link('core','hub:'+k,h.color,1.6);});
   ['recruiting','growth','sim'].forEach(k=>link('hub:lab','hub:'+k,BRAIN_HUBS.lab.color,1.1,true));
-  function evalKey(agentId){if(agentId.indexOf('s:')===0){const k=agentId.slice(2);return k==='followup'?'gos_followup':k;}if(agentId.indexOf('sim:')===0)return null;return agentId;}
+  function evalKey(agentId){if(agentId.indexOf('s:')===0){const k=agentId.slice(2);return k==='followup'?'gos_followup':k;}return agentId;}
   function syncAgents(list,sim){
     const groups={recruiting:list.filter(a=>a.area!=='sales'),growth:list.filter(a=>a.area==='sales'),sim:(sim||[]).map(a=>({key:'sim:'+a.key,name:a.name,enabled:a.status!=='paused',area:'sim',description:a.description,status:a.status}))};
     Object.entries(groups).forEach(([g,arr])=>arr.forEach((a,i)=>{const id='ag:'+a.key;const col=g==='recruiting'?(BRAIN_COL[a.key]||'#9fb6cc'):g==='growth'?BRAIN_SALES[i%BRAIN_SALES.length]:BRAIN_SIM[i%BRAIN_SIM.length];
@@ -150,8 +154,10 @@ function openBrain(){
       else if(best.type==='hub'){const b=S.brains[BRAIN_HUBS[best.hub].brain]||{};h+='<br>'+(b.agentes??'—')+' agentes · '+(b.reglas??0)+' reglas · '+(b.decisiones_abiertas??0)+' decisiones abiertas'+(best.hub!=='lab'?'<br>'+(b.revisiones_pendientes!=null?Number(b.revisiones_pendientes).toLocaleString('en-US')+' por revisar':'Evaluación en el Laboratorio')+(b.rojos?' · '+b.rojos+' en rojo':''):'<br>Audita a Recruiting, Growth OS y Simulador')+'<br><span style="opacity:.7">Clic para enfocar</span>';}
       else if(best.type==='core'){const u=S.brains.universal||{};h+='<br>4 sub-cerebros · '+(u.reglas??0)+' reglas · '+(u.eventos_pendientes??0)+' alertas sin atender';}
       tip.innerHTML=h;tip.style.display='block';tip.style.left=Math.min(x+14,S.w-290)+'px';tip.style.top=(y+14)+'px';}else tip.style.display='none';});
-  ov.querySelector('#brX').onclick=closeBrain;
+  if(ov.querySelector('#brX'))ov.querySelector('#brX').onclick=closeBrain;
+  if(opts.onRubricas)ov.querySelector('#brRub').onclick=()=>opts.onRubricas();
+  if(opts.view&&opts.view!=='all')setView(opts.view);
   ov.querySelector('#brFs').onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else ov.requestFullscreen&&ov.requestFullscreen().catch(()=>{});};
-  S.key=e=>{if(e.key==='Escape'&&!document.fullscreenElement)closeBrain();};document.addEventListener('keydown',S.key);
+  S.key=e=>{if(!opts.embed&&e.key==='Escape'&&!document.fullscreenElement)closeBrain();};document.addEventListener('keydown',S.key);
 }
 function closeBrain(){const S=_brain;if(!S)return;cancelAnimationFrame(S.raf);clearInterval(S.timer);clearInterval(S.rel);clearInterval(S.amb);S.ro&&S.ro.disconnect();document.removeEventListener('keydown',S.key);if(document.fullscreenElement)document.exitFullscreen().catch(()=>{});const o=document.getElementById('brainOv');if(o)o.remove();_brain=null;}
