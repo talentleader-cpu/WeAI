@@ -77,6 +77,12 @@ h2.plat small{font-weight:500;color:var(--muted);text-transform:none;letter-spac
 .ok{color:var(--verde);font-weight:700}.no{color:var(--muted)}
 .ev{background:#fff;border:1px solid var(--line);border-left:4px solid var(--rojo);border-radius:10px;padding:9px 12px;margin-bottom:8px;font-size:12.5px}
 .nota{font-size:12px;color:var(--muted);margin-top:6px}
+.vers{padding:12px 14px;border-top:1px solid var(--line);background:#fbfdff}
+.vers h4{margin:0 0 8px;font-size:12.5px;color:var(--navy);text-transform:uppercase;letter-spacing:.04em}
+.vers table{width:100%;border-collapse:collapse;font-size:12.5px}.vers td,.vers th{text-align:left;padding:6px 8px;border-top:1px solid var(--line)}.vers th{color:var(--muted);font-size:11px}
+.sm{color:var(--muted);font-size:11.5px}
+.ag .nm span.vtag,.vtag{display:inline-block;-webkit-line-clamp:unset;overflow:visible;background:#e7f0f8;color:var(--blue);font-weight:700;font-size:11px;border-radius:6px;padding:2px 7px;margin-left:6px;vertical-align:1px}
+.regv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}.regv textarea{grid-column:1/-1;min-height:70px}.regv input,.regv textarea{border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12.5px}.regv .acc{grid-column:1/-1;display:flex;gap:8px;align-items:center}
 .empty{background:#fff;border:1px dashed var(--line);border-radius:12px;padding:18px;color:var(--muted);text-align:center}
 body.embed header.top .who,body.embed #salir{display:none}
 body.embed header.top{padding-right:230px}
@@ -179,7 +185,7 @@ var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
   function muestra(){
     $('vBrain').classList.toggle('hidden',TAB!=='cerebro');$('vRub').classList.toggle('hidden',TAB!=='rubricas');
     if(TAB==='cerebro'){clearInterval(timer);timer=0;abreCerebro();}
-    else{if(window.closeBrain)closeBrain();cargaRub();if(!timer)timer=setInterval(cargaRub,60000);}
+    else{if(window.closeBrain)closeBrain();cargaRub();if(!timer)timer=setInterval(function(){if(document.querySelector('details.ag[open]'))return;cargaRub();},60000);}
   }
 
   /* ---------- cerebro ---------- */
@@ -237,7 +243,7 @@ var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
         var sv={3:0,2:0,1:0};(a.criterios||[]).forEach(function(c){sv[c.severity]=(sv[c.severity]||0)+1;});
         var abierto=!!($('q').value.trim()||$('fSev').value);
         html+='<details class="ag"'+(abierto?' open':'')+'><summary>'+
-          '<div class="nm"><b>'+esc(a.name)+'</b><span>'+esc(a.what_it_does||'')+'</span></div>'+
+          '<div class="nm"><b>'+esc(a.name)+(a.current_version?'<span class="vtag">'+esc(a.current_version)+'</span>':'')+'</b><span>'+esc(a.what_it_does||'')+'</span></div>'+
           '<div><span class="pill '+semClass(a.semaforo)+'">'+semTxt(a.semaforo)+'</span></div>'+
           '<div class="st"><b>'+(semClass(a.semaforo)&&a.salud!=null?Math.round(a.salud):'—')+'</b>salud</div>'+
           '<div class="st"><b>'+num(a.revisadas)+'</b>revisadas 30 d</div>'+
@@ -254,7 +260,7 @@ var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
               '<td>'+(c.calibrado?'<span class="ok">✓ calibrado</span>':'<span class="no">'+num(c.dobles)+' / 30 dobles</span>')+(c.acuerdo_pct!=null?'<div class="sm">'+Math.round(c.acuerdo_pct)+'% acuerdo</div>':'')+'</td>'+
               '<td>'+(j?(j.listo?'<span class="ok">✓ listo</span>':'<span class="no">en prueba</span>')+'<div class="sm">'+esc(j.kind)+(j.tpr!=null?' · TPR '+Math.round(j.tpr)+'% · TNR '+Math.round(j.tnr)+'%':'')+'</div>':'<span class="no">sin juez</span>')+'</td></tr>';
           }).join(''):'<tr><td colspan="7" class="no">Ningún criterio coincide con el filtro.</td></tr>')+
-          '</tbody></table></div></details>';
+          '</tbody></table></div>'+versionesHtml(a)+'</details>';
       });
     });
     $('lista').innerHTML=html||'<div class="empty">No hay agentes que coincidan con el filtro.</div>';
@@ -263,6 +269,22 @@ var sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
     $('eventos').innerHTML=evs.length?evs.slice(0,12).map(function(e){var p=e.payload||{};return '<div class="ev"><b>'+esc(p.agent_key||'')+'</b> · '+esc(p.criterio||'')+' <span class="no">· '+hace(e.created_at)+'</span>'+(p.reviewer?'<div class="sm">Revisó: '+esc(p.reviewer)+(p.nota?' · '+esc(String(p.nota).slice(0,140)):'')+'</div>':'')+'</div>';}).join(''):'<div class="empty">Sin fallas críticas registradas. Aparecen aquí en cuanto un recruiter marca una falla de severidad crítica.</div>';
     $('pie').textContent='Se actualiza cada minuto. Los criterios están en versión hipótesis hasta que se calibren con revisiones reales.';
   }
+  function versionesHtml(a){
+    var vs=a.versiones||[];
+    var h='<div class="vers"><h4>Versiones del prompt · antes y después</h4>';
+    h+=vs.length?'<table><tr><th>Versión</th><th>Vigente desde</th><th>Fuente</th><th>Modelo</th><th>Revisadas</th><th>Pasan</th></tr>'+vs.map(function(v){
+      var d=new Date(v.desde);var desde=d.getFullYear()<2001?'línea base':d.toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'});
+      return '<tr><td><b>'+esc(v.version)+'</b>'+(v.activa?' <span class="ok">· vigente</span>':'')+'</td><td>'+desde+'</td><td>'+esc(v.fuente||'—')+(v.nota?'<div class="sm">'+esc(v.nota)+'</div>':'')+'</td><td>'+esc(v.modelo||'—')+'</td><td>'+(v.revisadas!=null?num(v.revisadas):'0')+'</td><td>'+(v.pct_pasan!=null?Math.round(v.pct_pasan)+'%':'—')+'</td></tr>';}).join('')+'</table>':'<p class="sm">Sin versiones registradas.</p>';
+    if(a.system!=='simulador')h+='<details style="margin-top:8px"><summary class="sm" style="cursor:pointer">Registrar nueva versión (cuando cambie el prompt)</summary><form class="regv" data-agent="'+esc(a.agent_key)+'"><input name="fuente" placeholder="Fuente: p. ej. recruiting-agent@10"><input name="modelo" placeholder="Modelo (opcional)"><textarea name="contenido" placeholder="Prompt nuevo (opcional, recomendado)"></textarea><input name="nota" placeholder="Qué cambió" style="grid-column:1/-1"><div class="acc"><button class="btn" type="submit">Registrar versión</button><span class="sm" data-st></span></div></form></details>';
+    else h+='<p class="sm" style="margin-top:6px">El simulador registra sus versiones solo, cada vez que cambia el código del agente.</p>';
+    return h+'</div>';
+  }
+  document.addEventListener('submit',function(e){
+    var f=e.target;if(!f.classList||!f.classList.contains('regv'))return;e.preventDefault();
+    var st=f.querySelector('[data-st]');st.textContent='Guardando…';
+    sb.rpc('registrar_prompt',{p_agent_key:f.dataset.agent,p_content:f.contenido.value.trim()||null,p_model:f.modelo.value.trim()||null,p_source_ref:f.fuente.value.trim()||null,p_notes:f.nota.value.trim()||null}).then(function(r){
+      if(r.error){st.textContent='No se pudo: '+r.error.message;return;}st.textContent='Listo: '+r.data;setTimeout(cargaRub,600);});
+  });
   ['q','fSev','fSem'].forEach(function(id){$(id).addEventListener('input',pintaRub);});
   $('csv').onclick=function(){
     if(!DATA)return;var rows=[['plataforma','agente','codigo','criterio','severidad','pregunta','falla_si','pasa_si','medicion','estado','version','fallas','revisadas','calibrado','juez_listo']];
