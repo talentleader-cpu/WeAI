@@ -153,3 +153,6 @@
 
 /* Consentimiento de grabación */
 (function(){try{var x=document.createElement("script");x.src="/consent2.js?v=1";x.defer=true;document.head.appendChild(x);}catch(e){}})();
+
+/* Chat del asistente: tamaño más grande y botón para ampliar */
+(function(){try{var x=document.createElement("script");x.src="/assistant2.js?v=1";x.defer=true;document.head.appendChild(x);}catch(e){}})();
