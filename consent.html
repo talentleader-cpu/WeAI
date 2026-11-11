@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Confirmación de grabación · Wexpand</title>
+<style>
+  :root{--navy:#00415E;--blue:#0653A1;--ink:#0f2233;--mute:#5a6f84;--line:#e4ecf2;--bg:#f4f7fa;--ok:#1f8a4c}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font-family:Arial,Helvetica,sans-serif;color:var(--ink);display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px;max-width:520px;width:100%;overflow:hidden;box-shadow:0 6px 24px rgba(15,34,51,.07)}
+  .top{background:linear-gradient(135deg,var(--navy),var(--blue));padding:18px 22px;text-align:center;color:#fff;font-weight:800;letter-spacing:.06em;font-size:20px}
+  .body{padding:24px 22px}
+  h1{font-size:18px;margin:0 0 6px}
+  .sub{color:var(--mute);font-size:13.5px;margin:0 0 16px}
+  .txt{background:#f6faff;border:1px solid #dbe7fb;border-radius:12px;padding:14px 16px;font-size:14px;line-height:1.6;margin:0 0 16px}
+  label.chk{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.5;cursor:pointer;margin:0 0 16px}
+  label.chk input{width:20px;height:20px;margin-top:2px;flex:none}
+  button{width:100%;padding:12px;border:none;border-radius:10px;background:var(--blue);color:#fff;font-size:15px;font-weight:700;cursor:pointer}
+  button:disabled{background:#b9c7d6;cursor:not-allowed}
+  .ok{background:#f2fbf5;border:1px solid #cdebd8;border-radius:12px;padding:16px;color:#17613a;font-size:14.5px;line-height:1.6}
+  .err{color:#a03020;font-size:13px;margin:10px 0 0;min-height:16px}
+  .fine{color:#8a97a3;font-size:11.5px;margin:14px 0 0;line-height:1.5}
+  .fine a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="top">WEXPAND</div>
+  <div class="body" id="root"><p class="sub">Cargando…</p></div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function(){
+  var URL_='https://eabnfggpviymtrhvnimn.supabase.co';
+  var KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhYm5mZ2dwdml5bXRyaHZuaW1uIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU5NjQ4MDQsImV4cCI6MjEwMTU0MDgwNH0.9YbwqNbQPSrNalu1Ap0xMiwx5BI4UjQbI6UdxHmkg3Y';
+  var root=document.getElementById('root');
+  var e=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});};
+  var token=(new URLSearchParams(location.search).get('t')||'').trim();
+  function fail(msg){root.innerHTML='<h1>Enlace no válido</h1><p class="sub">'+e(msg)+'</p>';}
+  function done(when){
+    var d=when?new Date(when).toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}):'';
+    root.innerHTML='<div class="ok"><b>¡Listo, gracias!</b><br>Confirmaste que estás de acuerdo con la grabación de tu entrevista'+(d?(' ('+e(d)+')'):'')+'. Ya puedes agendar tu entrevista con el enlace de tu correo.</div>';
+  }
+  if(!/^[0-9a-f-]{36}$/i.test(token)){fail('Abre el enlace que recibiste en tu correo.');return;}
+  if(!window.supabase){fail('No se pudo cargar la página. Intenta de nuevo en un momento.');return;}
+  var sb=window.supabase.createClient(URL_,KEY,{auth:{persistSession:false}});
+  sb.rpc('consent_public_get',{p_token:token}).then(function(r){
+    var d=r.data;
+    if(r.error||!d){fail('Este enlace no existe o ya no está disponible. Responde el correo y te ayudamos.');return;}
+    if(d.accepted_at){done(d.accepted_at);return;}
+    var priv=d.privacy_url?('<p class="fine">Consulta nuestro <a href="'+e(d.privacy_url)+'" target="_blank" rel="noopener">aviso de privacidad</a>.</p>'):'';
+    root.innerHTML='<h1>Hola'+(d.first_name?(' '+e(d.first_name)):'')+'</h1>'
+      +'<p class="sub">'+(d.position_title?('Proceso para <b>'+e(d.position_title)+'</b>. '):'')+'Un último paso antes de tu entrevista.</p>'
+      +'<div class="txt">'+e(d.text)+'</div>'
+      +'<label class="chk"><input type="checkbox" id="ok"><span>Estoy de acuerdo con que mi entrevista se grabe de inicio a fin, para uso exclusivo de la calidad y mejora del proceso de reclutamiento.</span></label>'
+      +'<button id="go" disabled>Confirmar</button><div class="err" id="err"></div>'+priv;
+    var box=document.getElementById('ok'),btn=document.getElementById('go'),err=document.getElementById('err');
+    box.onchange=function(){btn.disabled=!box.checked;};
+    btn.onclick=function(){
+      if(!box.checked)return;
+      btn.disabled=true;btn.textContent='Guardando…';err.textContent='';
+      sb.rpc('consent_public_accept',{p_token:token,p_user_agent:navigator.userAgent}).then(function(x){
+        if(x.error||!x.data||!x.data.ok){btn.disabled=false;btn.textContent='Confirmar';err.textContent='No se pudo guardar. Intenta de nuevo.';return;}
+        done(x.data.accepted_at);
+      },function(){btn.disabled=false;btn.textContent='Confirmar';err.textContent='No se pudo guardar. Revisa tu conexión e intenta de nuevo.';});
+    };
+  },function(){fail('No se pudo cargar la página. Intenta de nuevo en un momento.');});
+})();
+</script>
+</body>
+</html>
