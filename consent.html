@@ -54,7 +54,7 @@
     root.innerHTML='<h1>Hola'+(d.first_name?(' '+e(d.first_name)):'')+'</h1>'
       +'<p class="sub">'+(d.position_title?('Proceso para <b>'+e(d.position_title)+'</b>. '):'')+'Un último paso antes de tu entrevista.</p>'
       +'<div class="txt">'+e(d.text)+'</div>'
-      +'<label class="chk"><input type="checkbox" id="ok"><span>Estoy de acuerdo con que mi entrevista se grabe de inicio a fin, para uso exclusivo de la calidad y mejora del proceso de reclutamiento.</span></label>'
+      +'<label class="chk"><input type="checkbox" id="ok"><span>Estoy de acuerdo con que mi entrevista se grabe de inicio a fin, para mejorar la calidad de las entrevistas y con acceso exclusivo del equipo de reclutamiento de Wexpand.</span></label>'
       +'<button id="go" disabled>Confirmar</button><div class="err" id="err"></div>'+priv;
     var box=document.getElementById('ok'),btn=document.getElementById('go'),err=document.getElementById('err');
     box.onchange=function(){btn.disabled=!box.checked;};
