@@ -39,9 +39,11 @@
   var e=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];});};
   var token=(new URLSearchParams(location.search).get('t')||'').trim();
   function fail(msg){root.innerHTML='<h1>Enlace no válido</h1><p class="sub">'+e(msg)+'</p>';}
-  function done(when){
+  function done(when,cal){
     var d=when?new Date(when).toLocaleString('es-MX',{dateStyle:'long',timeStyle:'short'}):'';
-    root.innerHTML='<div class="ok"><b>¡Listo, gracias!</b><br>Confirmaste que estás de acuerdo con la grabación de tu entrevista'+(d?(' ('+e(d)+')'):'')+'. Ya puedes agendar tu entrevista con el enlace de tu correo.</div>';
+    var ok=/^https:\/\//i.test(cal||'');
+    root.innerHTML='<div class="ok"><b>¡Listo, gracias!</b><br>Confirmaste que estás de acuerdo con la grabación de tu entrevista'+(d?(' ('+e(d)+')'):'')+'. '+(ok?'Ahora puedes elegir tu horario:':'Responde el correo y te ayudamos a agendar tu entrevista.')+'</div>'
+      +(ok?'<a href="'+e(cal)+'" style="display:block;text-align:center;text-decoration:none;margin-top:16px;padding:12px;border-radius:10px;background:#0653A1;color:#fff;font-size:15px;font-weight:700">Agendar mi entrevista &rarr;</a>':'');
   }
   if(!/^[0-9a-f-]{36}$/i.test(token)){fail('Abre el enlace que recibiste en tu correo.');return;}
   if(!window.supabase){fail('No se pudo cargar la página. Intenta de nuevo en un momento.');return;}
@@ -49,7 +51,7 @@
   sb.rpc('consent_public_get',{p_token:token}).then(function(r){
     var d=r.data;
     if(r.error||!d){fail('Este enlace no existe o ya no está disponible. Responde el correo y te ayudamos.');return;}
-    if(d.accepted_at){done(d.accepted_at);return;}
+    if(d.accepted_at){done(d.accepted_at,d.calendar_url);return;}
     var priv=d.privacy_url?('<p class="fine">Consulta nuestro <a href="'+e(d.privacy_url)+'" target="_blank" rel="noopener">aviso de privacidad</a>.</p>'):'';
     root.innerHTML='<h1>Hola'+(d.first_name?(' '+e(d.first_name)):'')+'</h1>'
       +'<p class="sub">'+(d.position_title?('Proceso para <b>'+e(d.position_title)+'</b>. '):'')+'Un último paso antes de tu entrevista.</p>'
@@ -63,7 +65,7 @@
       btn.disabled=true;btn.textContent='Guardando…';err.textContent='';
       sb.rpc('consent_public_accept',{p_token:token,p_user_agent:navigator.userAgent}).then(function(x){
         if(x.error||!x.data||!x.data.ok){btn.disabled=false;btn.textContent='Confirmar';err.textContent='No se pudo guardar. Intenta de nuevo.';return;}
-        done(x.data.accepted_at);
+        done(x.data.accepted_at,x.data.calendar_url);
       },function(){btn.disabled=false;btn.textContent='Confirmar';err.textContent='No se pudo guardar. Revisa tu conexión e intenta de nuevo.';});
     };
   },function(){fail('No se pudo cargar la página. Intenta de nuevo en un momento.');});
