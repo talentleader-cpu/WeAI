@@ -1,5 +1,5 @@
 /* WeAI - mover candidatos de una posición a otra desde el pipeline (2026-11-13)
-   Usa la selección múltiple existente (pwBulkSel) y la RPC move_applications. Correo de bienvenida opcional (apagado por defecto). */
+   Usa la selección múltiple existente (pwBulkSel) y la RPC move_applications. Correo de bienvenida: pregunta explícita Sí/No, sin opción por defecto. */
 (function () {
   if (window.__pwmInstalled) return;
   var POS = null;
@@ -36,13 +36,11 @@
   }
   function syncWelcome() {
     var sel = document.querySelector('input[name="pwmTo"]:checked');
-    var cb = document.getElementById('pwmWelcome'), hint = document.getElementById('pwmWelcomeHint');
-    if (!cb) return;
+    var mail = document.querySelector('input[name="pwmMail"]:checked');
+    var hint = document.getElementById('pwmWelcomeHint');
     var open = !sel || sel.getAttribute('data-open') === '1';
-    cb.disabled = !open;
-    if (!open) cb.checked = false;
-    if (hint) hint.textContent = open ? '' : 'La posición destino no está abierta: no se envía correo.';
-    var btn = document.getElementById('pwmGo'); if (btn) btn.disabled = !sel;
+    if (hint) hint.textContent = (!open && mail && mail.value === 'yes') ? 'Ojo: la posición destino no está abierta, así que el correo no se enviará.' : '';
+    var btn = document.getElementById('pwmGo'); if (btn) btn.disabled = !(sel && mail);
   }
   window.pwmOpen = async function () {
     var ids = (typeof pwBulkSel !== 'undefined' && pwBulkSel) ? Array.from(pwBulkSel) : [];
@@ -57,7 +55,10 @@
       '<div style="padding:12px 18px 0"><input id="pwmQ" placeholder="Buscar posición o cliente…" style="width:100%;padding:9px 10px;border:1px solid #cfdcf2;border-radius:8px;font-size:13.5px;box-sizing:border-box">' +
       '<label style="display:flex;gap:6px;align-items:center;font-size:12.5px;margin-top:8px;color:#33414d"><input id="pwmIncl" type="checkbox"> Incluir posiciones no abiertas</label></div>' +
       '<div id="pwmList" style="margin:10px 18px;border:1px solid #e4ecf2;border-radius:10px;overflow:auto;min-height:120px;max-height:300px"><div style="padding:14px;color:#6b7a88;font-size:13px">Cargando…</div></div>' +
-      '<div style="padding:0 18px 6px"><label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px"><input id="pwmWelcome" type="checkbox" style="margin-top:3px"><span><b>Enviar correo de bienvenida</b><br><span style="font-size:12px;color:#6b7a88">Les llegan los pasos de la nueva posición (video entrevista y evaluaciones). Apagado por defecto.</span></span></label>' +
+      '<div style="padding:0 18px 6px"><b style="font-size:13.5px">¿Enviar correo de bienvenida a los candidatos movidos?</b>' +
+      '<div style="font-size:12px;color:#6b7a88;margin:2px 0 6px">Si la posición está abierta, reciben los pasos completos de la nueva posición (video entrevista y evaluaciones). Elige una opción para continuar.</div>' +
+      '<label style="display:flex;gap:8px;align-items:center;font-size:13.5px;margin-bottom:4px"><input type="radio" name="pwmMail" value="yes"> Sí, enviar correo de bienvenida</label>' +
+      '<label style="display:flex;gap:8px;align-items:center;font-size:13.5px"><input type="radio" name="pwmMail" value="no"> No, moverlos sin enviar correo</label>' +
       '<div id="pwmWelcomeHint" style="font-size:12px;color:#b45309;margin-top:4px"></div></div>' +
       '<div id="pwmMsg" style="padding:0 18px;font-size:13px"></div>' +
       '<div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 18px;border-top:1px solid #e4ecf2"><button id="pwmCancel" class="btn-ghost" type="button">Cancelar</button><button id="pwmGo" class="btn-prim" type="button" disabled>Mover</button></div></div>';
@@ -67,6 +68,7 @@
     document.getElementById('pwmQ').oninput = refreshList;
     document.getElementById('pwmIncl').onchange = refreshList;
     document.getElementById('pwmList').onchange = syncWelcome;
+    m.querySelectorAll('input[name="pwmMail"]').forEach(function (r) { r.onchange = syncWelcome; });
     document.getElementById('pwmGo').onclick = go;
     try { await loadPositions(); refreshList(); }
     catch (e) { document.getElementById('pwmList').innerHTML = '<div style="padding:14px;color:#b91c1c;font-size:13px">No se pudieron cargar las posiciones.</div>'; }
@@ -74,7 +76,8 @@
   async function go() {
     var sel = document.querySelector('input[name="pwmTo"]:checked'); if (!sel) return;
     var ids = Array.from(pwBulkSel);
-    var welcome = !!document.getElementById('pwmWelcome').checked;
+    var mailSel = document.querySelector('input[name="pwmMail"]:checked'); if (!mailSel) return;
+    var welcome = mailSel.value === 'yes';
     var btn = document.getElementById('pwmGo'), msg = document.getElementById('pwmMsg');
     btn.disabled = true; btn.textContent = 'Moviendo…';
     var r = await sb.rpc('move_applications', { p_application_ids: ids, p_to_position_id: sel.value, p_send_welcome: welcome, p_reset_stage: true });
