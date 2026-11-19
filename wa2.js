@@ -4,8 +4,8 @@
   const e=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   // Approved templates usable by this number. Add new ones here once Meta approves them for the sending account.
   const TEMPLATES=[
-    {name:'candidato_15_01_2025',lang:'es_MX',label:'Application invite + video interview',params:['First name','Position title','Video interview link'],
-     preview:'Hola {1}, soy Maricela de Wexpand. Recibí tu información para la vacante de {2}… responde las preguntas en este enlace: {3}'}
+    {name:'bienvenida_video_weai',lang:'es_MX',label:'Invitación a video entrevista (bienvenida)',params:['Nombre','Posición','Enlace de la video entrevista'],
+     preview:'Hola {1}, gracias por tu interés en la posición {2} de Wexpand. Para continuar con tu proceso, te pedimos grabar una breve video entrevista en este enlace: {3} …'}
   ];
   const STAT={draft:'Draft',approved:'Approved',rejected:'Rejected',sent:'Sent',delivered:'Delivered',read:'Read',failed:'Failed',received:''};
   let cur=null;
@@ -82,13 +82,12 @@
   // Add a WhatsApp button to the candidate drawer
   function inject(){
     try{
-      const meta=document.getElementById('dMeta');if(!meta||!window.drawerCand)return;
+      const meta=document.getElementById('dMeta');const c=(typeof drawerCand!=='undefined'&&drawerCand)?drawerCand:window.drawerCand;if(!meta||!c)return;
       let b=document.getElementById('waBtn');
       if(!b){b=document.createElement('button');b.id='waBtn';b.textContent='WhatsApp';b.style.cssText='margin-left:10px;padding:3px 10px;border:1px solid #1f8a4c;color:#1f8a4c;background:#fff;border-radius:999px;font-size:12px;cursor:pointer';meta.appendChild(b);}
-      const c=window.drawerCand;
-      b.onclick=ev=>{ev.stopPropagation();open(c.id,c.full_name,c.phone,c.first_name);};
+      b.onclick=ev=>{ev.stopPropagation();open(c.id,c.full_name,c.phone,c.first_name||String(c.full_name||'').replace(/^[^A-Za-z\u00C0-\u017F]+/,'').trim().split(/\s+/)[0]||'');};
     }catch(x){}
   }
   const orig=window.openDrawer;
-  if(typeof orig==='function'){window.openDrawer=function(){const r=orig.apply(this,arguments);setTimeout(inject,0);return r;};}
+  if(typeof orig==='function'){window.openDrawer=function(){const r=orig.apply(this,arguments);setTimeout(inject,0);setTimeout(inject,400);setTimeout(inject,1200);return r;};}
 })();
