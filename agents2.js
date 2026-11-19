@@ -150,6 +150,8 @@
 (function(){try{var x=document.createElement('script');x.src='/tickets2.js?v=1';x.defer=true;document.head.appendChild(x);}catch(e){}})();
 /* WhatsApp panel */
 (function(){try{var x=document.createElement('script');x.src='/wa2.js?v=1';x.defer=true;document.head.appendChild(x);}catch(e){}})();
+/* Mover candidatos entre posiciones */
+(function(){try{var x=document.createElement('script');x.src='/pw-move.js?v=1';x.defer=true;document.head.appendChild(x);}catch(e){}})();
 
 /* Consentimiento de grabación */
 (function(){try{var x=document.createElement("script");x.src="/consent2.js?v=1";x.defer=true;document.head.appendChild(x);}catch(e){}})();
