@@ -12,9 +12,21 @@
   const STAT={draft:'Draft',approved:'Approved',rejected:'Rejected',sent:'Sent',delivered:'Delivered',read:'Read',failed:'Failed',received:''};
   let cur=null;
 
-  async function lastApp(candId){
-    const r=await sb.from('applications').select('id,position_id,positions(title)').eq('candidate_id',candId).order('updated_at',{ascending:false}).limit(1);
+  const VIDEO_BASE='https://videointerviews.wexpandmx.com';
+  async function lastApp(candId,appId){
+    let q=sb.from('applications').select('id,position_id,positions(title,video_enabled)');
+    q=appId?q.eq('id',appId):q.eq('candidate_id',candId).order('updated_at',{ascending:false}).limit(1);
+    const r=await q;
     return (r.data&&r.data[0])||null;
+  }
+  // Enlace de la video entrevista de la posición (mismo que usa el correo de bienvenida: kit activo más reciente).
+  async function videoLink(app){
+    try{
+      if(!app||!app.position_id||(app.positions&&app.positions.video_enabled===false))return '';
+      const r=await sb.from('interview_kits').select('share_token').eq('position_id',app.position_id).not('share_token','is',null).order('is_active',{ascending:false}).order('created_at',{ascending:false}).limit(1);
+      const t=r.data&&r.data[0]&&r.data[0].share_token;
+      return t?(VIDEO_BASE+'/interview.html?k='+t):'';
+    }catch(x){return '';}
   }
   async function load(candId){
     const r=await sb.from('wa_messages').select('*').eq('candidate_id',candId).order('created_at',{ascending:true}).limit(300);
@@ -28,9 +40,9 @@
       +'<div style="font-size:10.5px;color:#6b8296;margin-top:3px">'+new Date(m.created_at).toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})+st+'</div>'
       +(m.error?'<div style="font-size:11px;color:#a03020;margin-top:2px">'+e(m.error)+'</div>':'')+'</div></div>';
   }
-  async function open(candId,name,phone,firstName){
+  async function open(candId,name,phone,firstName,appId){
     cur={candId:candId,name:name,phone:phone,firstName:firstName||(name||'').split(' ')[0]};
-    const app=await lastApp(candId);cur.app=app;
+    const app=await lastApp(candId,appId);cur.app=app;cur.videoUrl=await videoLink(app);
     const ov=document.createElement('div');
     ov.style.cssText='position:fixed;inset:0;background:rgba(15,34,51,.55);z-index:10001;display:flex;align-items:center;justify-content:center;padding:16px';
     ov.innerHTML='<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;height:min(86vh,720px);display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box"><div style="padding:14px 18px;border-bottom:1px solid #e6edf3;display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0;overflow-wrap:anywhere"><div style="font-weight:700;color:var(--navy);font-size:15px">'+e(name||'Candidate')+' · WhatsApp</div><div style="font-size:12px;color:#6b8296">'+e(phone||'No phone on file')+(app&&app.positions?(' · '+e(app.positions.title)):'')+'</div></div><button id="waX" style="border:none;background:#eef1f4;border-radius:8px;padding:6px 12px;cursor:pointer">Close</button></div><div id="waThread" style="flex:1;min-height:0;overflow:auto;padding:12px 18px"></div><div id="waComp" style="border-top:1px solid #e6edf3;padding:12px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;max-height:55%;overflow-y:auto;box-sizing:border-box"></div></div>';
@@ -53,7 +65,7 @@
         const mode=$('#waMode').value;$('#waTpl').style.display=mode==='template'?'':'none';
         if(mode==='text'){$('#waFields').innerHTML='<select id="waQuick" style="width:100%;box-sizing:border-box;min-width:0;padding:7px;border:1px solid #dfe5ec;border-radius:8px;font:inherit;font-size:13px"><option value="">Respuestas rápidas…</option>'+QUICK.map((q,i)=>'<option value="'+i+'">'+e(q.label)+'</option>').join('')+'</select><textarea id="waBody" placeholder="Write a message…" style="width:100%;box-sizing:border-box;min-height:70px;padding:9px;border:1px solid #dfe5ec;border-radius:10px;font:inherit;font-size:13px"></textarea>';const qk=$('#waQuick');qk.onchange=()=>{if(qk.value==='')return;const bd=$('#waBody');bd.value=QUICK[Number(qk.value)].text;qk.value='';bd.focus();};return;}
         const t=TEMPLATES[Number($('#waTpl').value)];
-        const defs=[cur.firstName||'',(cur.app&&cur.app.positions&&cur.app.positions.title)||'',''];
+        const defs=[cur.firstName||'',(cur.app&&cur.app.positions&&cur.app.positions.title)||'',cur.videoUrl||''];
         $('#waFields').innerHTML='<div style="font-size:12px;color:#5a6f84;line-height:1.4;white-space:normal;overflow-wrap:anywhere;word-break:break-word;background:#f5f8fb;border-radius:8px;padding:8px 10px">'+e(t.preview.replace(/\{(\d)\}/g,function(_,n){return '['+t.params[n-1]+']';}))+'</div>'+t.params.map((p,i)=>'<input data-p="'+i+'" value="'+e(defs[i]||'')+'" placeholder="'+e(p)+'" style="width:100%;box-sizing:border-box;min-width:0;padding:8px;border:1px solid #dfe5ec;border-radius:8px;font:inherit;font-size:13px">').join('');
       };
       $('#waMode').onchange=fields;$('#waTpl').onchange=fields;fields();
@@ -109,7 +121,7 @@
       const ap=pwApps.find(x=>x.id===id);const c=ap&&ap.candidates;
       if(!c||!c.id)return;
       ev.preventDefault();ev.stopPropagation();
-      open(c.id,c.full_name,c.phone||a.getAttribute('href').replace('https://wa.me/',''),firstOf(c));
+      open(c.id,c.full_name,c.phone||a.getAttribute('href').replace('https://wa.me/',''),firstOf(c),id);
     }catch(x){}
   },true);
 })();
