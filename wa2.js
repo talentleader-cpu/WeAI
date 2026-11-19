@@ -90,4 +90,24 @@
   }
   const orig=window.openDrawer;
   if(typeof orig==='function'){window.openDrawer=function(){const r=orig.apply(this,arguments);setTimeout(inject,0);setTimeout(inject,400);setTimeout(inject,1200);return r;};}
+
+  // Tablero (Kanban): el enlace WhatsApp de cada tarjeta abre el panel de WeAI. Ctrl/Cmd/Shift + clic conserva WhatsApp Web.
+  const firstOf=c=>c.first_name||String(c.full_name||'').replace(/^[^A-Za-z\u00C0-\u017F]+/,'').trim().split(/\s+/)[0]||'';
+  document.addEventListener('click',function(ev){
+    try{
+      const a=ev.target.closest&&ev.target.closest('a[href^="https://wa.me/"]');
+      if(!a||ev.ctrlKey||ev.metaKey||ev.shiftKey||ev.button!==0)return;
+      let id=null,m=null;
+      const card=a.closest('.pcard');
+      const dg=card&&card.getAttribute('ondragstart');
+      m=dg&&dg.match(/'([0-9a-f-]{36})'/);
+      if(m)id=m[1];
+      if(!id){const cv=a.parentElement&&a.parentElement.querySelector('[onclick*="pwPreviewOpen("]');const oc=cv&&cv.getAttribute('onclick');m=oc&&oc.match(/pwPreviewOpen\('([0-9a-f-]{36})'\)/);if(m)id=m[1];}
+      if(!id||typeof pwApps==='undefined')return;
+      const ap=pwApps.find(x=>x.id===id);const c=ap&&ap.candidates;
+      if(!c||!c.id)return;
+      ev.preventDefault();ev.stopPropagation();
+      open(c.id,c.full_name,c.phone||a.getAttribute('href').replace('https://wa.me/',''),firstOf(c));
+    }catch(x){}
+  },true);
 })();
