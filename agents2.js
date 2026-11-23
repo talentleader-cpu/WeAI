@@ -1,3 +1,5 @@
+
+(function(){try{var x=document.createElement('script');x.src='/cvedit.js?v=1';x.defer=true;document.head.appendChild(x);}catch(e){}})();
 // ===== Agents 2: review screen for Job Intake & Analytics drafts (loaded after index.html) =====
 (function(){
   const NAMES={job_intake:'Job Intake & Calibration',analytics:'Recruitment Analytics',interview_analyst:'Interview Analyst',client_intel:'Client Intelligence'};
